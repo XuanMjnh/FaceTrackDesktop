@@ -15,7 +15,7 @@ from app.config import home_dir
 from app.services.notifications import NotificationService
 from app.ui.notifications_page import NotificationsPage
 
-from app.ui.theme import STYLE, apply_theme, line_icon, label
+from app.ui.theme import STYLE, apply_theme, line_icon, label, GeometricBackground
 
 
 
@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
         self.closing, self.safe_to_close = False, False
         self.last_frame = None
         self.last_engine_warning = ""
-        root = QWidget()
+        root = GeometricBackground()
         root.setObjectName("Workspace")
         layout = QHBoxLayout(root)
         layout.setContentsMargins(0, 0, 0, 0)
