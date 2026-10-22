@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+pytest-of-root/
+.venv*/
+build/
+dist/
+*.spec
+*.sqlite*
+*.db
+data/*
+!data/.gitkeep
+*.onnx
+*.embedding
