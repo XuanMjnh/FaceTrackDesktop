@@ -13,7 +13,7 @@ class SettingsPage(QWidget):
         self.window = window
         s = window.settings
         layout = page_layout(self)
-        page_header(layout, "Cài đặt", "Cấu hình thiết bị, nhận diện và nơi lưu dữ liệu.",
+        page_header(layout, "Cài đặt", "Thiết bị, nhận diện và lưu trữ.",
                     action("Lưu cài đặt", self.save, "primary"))
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -69,11 +69,11 @@ class SettingsPage(QWidget):
             line.addWidget(control, 1)
             line.addWidget(action("Chọn…", lambda checked=False, target=control, mode=kind: self.browse(target, mode)))
             storage_body.addWidget(field(caption, row))
-        storage_body.addWidget(label("Đổi đường dẫn không tự di chuyển dữ liệu cũ. Cài đặt mới được áp dụng khi mở lại ứng dụng.", "Muted", True))
+        storage_body.addWidget(label("Đường dẫn mới có hiệu lực sau khi khởi động lại. Dữ liệu cũ không tự di chuyển.", "Muted", True))
         body.addWidget(storage)
         display, display_body = panel("Thông tin trên khung hình")
         checks = FlowLayout(spacing=24)
-        self.name, self.id, self.score = QCheckBox("Họ tên"), QCheckBox("Mã ID"), QCheckBox("Độ tương đồng (debug)")
+        self.name, self.id, self.score = QCheckBox("Họ tên"), QCheckBox("Mã ID"), QCheckBox("Điểm tương đồng")
         self.name.setChecked(s.show_name)
         self.id.setChecked(s.show_id)
         self.score.setChecked(s.show_score)
@@ -81,17 +81,17 @@ class SettingsPage(QWidget):
             checks.addWidget(control)
         display_body.addLayout(checks)
         body.addWidget(display)
-        diagnostics, diagnostics_body = panel("Kiểm tra môi trường", "Kiểm tra backend đang chạy và khả năng sử dụng CPU / NVIDIA CUDA.")
+        diagnostics, diagnostics_body = panel("Kiểm tra môi trường", "Backend CPU / NVIDIA CUDA.")
         test = action("Kiểm tra CPU / GPU", lambda: window.jobs.run(window.engine.diagnostics, self.report.setPlainText))
         diagnostics_body.addWidget(test, 0, Qt.AlignLeft)
         self.report = QPlainTextEdit()
         self.report.setReadOnly(True)
-        self.report.setPlaceholderText("Kết quả kiểm tra sẽ hiển thị ở đây.")
+        self.report.setPlaceholderText("Chưa có kết quả.")
         self.report.setMinimumHeight(140)
         self.report.setMaximumHeight(200)
         diagnostics_body.addWidget(self.report)
         body.addWidget(diagnostics)
-        body.addWidget(label("Dữ liệu được xử lý cục bộ. Chỉ ghi nhận khi có sự cho phép phù hợp. Ảnh và embedding chưa được mã hóa; bảo vệ thư mục dữ liệu bằng quyền Windows hoặc BitLocker.", "Muted", True))
+        body.addWidget(label("Ảnh và embedding chưa được mã hóa.", "Muted", True))
         body.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll, 1)
@@ -115,6 +115,6 @@ class SettingsPage(QWidget):
             if not all((new.database_path, new.image_dir, new.model_root)):
                 raise ValueError("Các đường dẫn không được để trống")
             new.save()
-            QMessageBox.information(self, "Đã lưu", "Mở lại ứng dụng để áp dụng. Đổi đường dẫn tạo vùng dữ liệu mới; sao lưu/di chuyển dữ liệu thủ công khi ứng dụng đã đóng.")
+            QMessageBox.information(self, "Đã lưu", "Khởi động lại để áp dụng. Dữ liệu không tự di chuyển khi đổi đường dẫn.")
         except Exception as exc:
             QMessageBox.warning(self, "Cài đặt", str(exc))

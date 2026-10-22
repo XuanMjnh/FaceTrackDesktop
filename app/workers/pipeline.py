@@ -39,8 +39,9 @@ class Latest:
 
 
 class Pipeline:
-    def __init__(self, db, engine, settings, notify=lambda message: None):
+    def __init__(self, db, engine, settings, notify=lambda message: None, on_detection=None, on_invalidate=None):
         self.db, self.engine, self.settings, self.notify = db, engine, settings, notify
+        self.on_detection, self.on_invalidate = on_detection, on_invalidate
         self.gate = threading.RLock()
         self.epoch = 0
         self.commands = deque()
@@ -58,6 +59,8 @@ class Pipeline:
 
     def _invalidate(self):
         self.epoch += 1
+        if self.on_invalidate:
+            self.on_invalidate()
         self.inbox.clear()
         self.raw.clear()
         self.results.clear()
@@ -105,8 +108,10 @@ class Pipeline:
                         playing = False
                         if name == "stop":
                             with self.gate:
-                                self.state.update(playing=False, position=0.0)
+                                self.state.update(playing=False, kind="", source="", position=0.0, duration=0.0)
                             continue
+                        with self.gate:
+                            self.state.update(playing=False, kind="", source="", position=0.0, duration=0.0)
                         kind = "camera" if name == "open_camera" else "video"
                         try:
                             source = f"camera:{value}" if kind == "camera" else video_source(value, self.stopping.is_set)
@@ -115,7 +120,7 @@ class Pipeline:
                                 fps = float(cap.get(cv2.CAP_PROP_FPS))
                                 frames = float(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                                 if not math.isfinite(fps) or fps <= 0 or not math.isfinite(frames) or frames <= 0:
-                                    raise ValueError("Video thiếu FPS/số khung hình hợp lệ; hãy chuyển sang MP4 CFR bằng FFmpeg.")
+                                    raise ValueError("Video thiếu FPS hoặc số khung hình hợp lệ.")
                                 duration = frames / fps
                             else:
                                 fps, duration = 30.0, 0.0
@@ -218,6 +223,8 @@ class Pipeline:
                     rate = 1 / max(time.monotonic()-started, 1e-6)
                     self.results.put((frame, labels, rate))
                     self.state["fps"] = rate
+                    if self.on_detection:
+                        self.on_detection(frame, labels)
             except Exception as exc:
                 self.notify(f"Nhận diện: {exc}")
                 # Avoid a hot error loop while allowing setup from the settings page.

@@ -11,7 +11,7 @@ class PersonsPage(QWidget):
         super().__init__()
         self.window, self.rows, self.busy = window, {}, False
         layout = page_layout(self)
-        page_header(layout, "Hồ sơ người", "Quản lý thông tin và ảnh tham chiếu của người đã đăng ký.",
+        page_header(layout, "Hồ sơ người", "Danh sách hồ sơ và ảnh tham chiếu.",
                     action("Thêm người", self.add, "primary", "plus"))
         box, body = panel()
         search_row = QHBoxLayout()
@@ -22,7 +22,7 @@ class PersonsPage(QWidget):
         self.search.setMaximumWidth(460)
         self.search.returnPressed.connect(self.refresh)
         search_row.addWidget(self.search, 1)
-        search_row.addWidget(action("Tìm / Làm mới", self.refresh))
+        search_row.addWidget(action("Tìm kiếm", self.refresh))
         search_row.addStretch()
         self.count = label("0 hồ sơ", "Muted")
         search_row.addWidget(self.count)
@@ -50,7 +50,6 @@ class PersonsPage(QWidget):
         self.table.sortItems(2, Qt.AscendingOrder)
         table_body.addWidget(self.table)
         layout.addWidget(table_box, 1)
-        layout.addWidget(label("Chọn một hồ sơ để chỉnh sửa. Khi xóa hồ sơ, các phiên xuất hiện trong lịch sử vẫn được giữ lại.", "Muted", True))
 
     def configure_columns(self):
         header = self.table.horizontalHeader()
@@ -95,7 +94,7 @@ class PersonsPage(QWidget):
         return self.rows.get(self.table.item(row, 1).text()) if row >= 0 else None
 
     def choose_image(self, name, pid=None, replace_id=None, after=None):
-        path, _ = QFileDialog.getOpenFileName(self, "Chọn ảnh chỉ có một khuôn mặt", "", "Ảnh (*.jpg *.jpeg *.png *.bmp *.webp)")
+        path, _ = QFileDialog.getOpenFileName(self, "Chọn ảnh tham chiếu", "", "Ảnh (*.jpg *.jpeg *.png *.bmp *.webp)")
         if not path:
             return
         def inspected(result):
@@ -103,10 +102,11 @@ class PersonsPage(QWidget):
             duplicate = result[2]
             if duplicate.person_id and duplicate.person_id != pid:
                 choice = QMessageBox(self)
-                choice.setWindowTitle("Phát hiện khuôn mặt tương đồng")
-                choice.setText(f"Ảnh tương đồng {duplicate.score:.3f} với {duplicate.name} ({duplicate.person_id}). Chọn cách lưu.")
+                choice.setWindowTitle("Ảnh tương đồng")
+                choice.setText(f"Tương đồng {duplicate.score:.3f} · {duplicate.name} (ID: {duplicate.person_id})")
                 existing = choice.addButton("Thêm vào hồ sơ hiện có", QMessageBox.AcceptRole)
-                new = choice.addButton("Tiếp tục hồ sơ đã chọn / mới", QMessageBox.ActionRole)
+                keep_label = "Dùng hồ sơ đã chọn" if pid else "Tạo hồ sơ mới"
+                new = choice.addButton(keep_label, QMessageBox.ActionRole)
                 choice.addButton("Hủy", QMessageBox.RejectRole)
                 choice.exec()
                 if choice.clickedButton() == existing:
@@ -137,12 +137,12 @@ class PersonsPage(QWidget):
 
     def active(self):
         row = self.selected()
-        if row and confirm(self, "Đổi trạng thái hồ sơ? Hồ sơ ngừng sử dụng sẽ không được so khớp."):
+        if row and confirm(self, "Đổi trạng thái sử dụng hồ sơ?"):
             self.window.jobs.run(lambda: self.window.db.edit_person(row["id"], row["name"], not row["is_active"]), lambda _: self.changed())
 
     def delete(self):
         row = self.selected()
-        if row and confirm(self, f"Xóa {row['name']} cùng toàn bộ ảnh và embedding? Lịch sử được giữ lại."):
+        if row and confirm(self, "Xóa hồ sơ và ảnh tham chiếu? Lịch sử xuất hiện vẫn được giữ lại."):
             # Stop and flush first so an in-flight recognition cannot recreate a deleted profile.
             def remove():
                 self.window.pipeline.command("stop")
@@ -200,7 +200,7 @@ class PersonsPage(QWidget):
         button("Thay ảnh chọn", replace, controls)
         def delete_ref():
             item = listing.currentItem()
-            if item and confirm(dialog, "Xóa ảnh tham chiếu đã chọn và embedding tương ứng?"):
+            if item and confirm(dialog, "Xóa ảnh tham chiếu đã chọn?"):
                 rid = item.data(Qt.UserRole)["id"]
                 def remove():
                     path = self.window.db.delete_reference(rid)

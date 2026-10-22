@@ -12,7 +12,7 @@ def open_capture(source, camera=False):
         capture = cv2.VideoCapture(source)
     if not capture.isOpened():
         capture.release()
-        raise RuntimeError("Không mở được camera/video. Kiểm tra quyền, thiết bị và codec.")
+        raise RuntimeError("Không mở được camera/video. Kiểm tra thiết bị, quyền truy cập hoặc codec.")
     capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     return capture
 

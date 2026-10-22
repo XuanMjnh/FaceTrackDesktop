@@ -126,6 +126,9 @@ def line_icon(name, color="#65758b", size=20):
     elif name == "history":
         p.drawEllipse(QPoint(12, 12), 9, 9)
         p.drawLine(12, 6, 12, 12); p.drawLine(12, 12, 16, 14)
+    elif name == "mail":
+        p.drawRoundedRect(QRectF(3, 5, 18, 14), 2, 2)
+        p.drawLine(3, 6, 12, 13); p.drawLine(12, 13, 21, 6)
     elif name == "settings":
         for y, x in ((6, 9), (12, 16), (18, 7)):
             p.drawLine(3, y, x-3, y); p.drawLine(x+3, y, 21, y)

@@ -11,6 +11,9 @@ from app.ui.video_page import VideoPage
 from app.ui.persons_page import PersonsPage
 from app.ui.history_page import HistoryPage
 from app.ui.settings_page import SettingsPage
+from app.config import home_dir
+from app.services.notifications import NotificationService
+from app.ui.notifications_page import NotificationsPage
 
 from app.ui.theme import STYLE, apply_theme, line_icon, label
 
@@ -33,7 +36,9 @@ class MainWindow(QMainWindow):
         self.jobs = Jobs(self)
         self.engine = engine or FaceEngine(settings)
         self.enrollment = Enrollment(db, self.engine, settings.image_dir)
-        self.pipeline = Pipeline(db, self.engine, settings, self.message.emit)
+        self.notifications = NotificationService(home_dir(), self.message.emit)
+        self.pipeline = Pipeline(db, self.engine, settings, self.message.emit,
+                                 self.notifications.detection, self.notifications.cancel_pending)
         self.message.connect(self.show_message)
         self.closed.connect(self.finish_close)
         self.closing, self.safe_to_close = False, False
@@ -60,17 +65,15 @@ class MainWindow(QMainWindow):
         brand.addWidget(label("FaceTrack", "Brand"))
         brand.addStretch()
         side.addLayout(brand)
-        side.addWidget(label("Quản lý hiện diện", "Muted"))
-        side.addSpacing(30)
-        side.addWidget(label("KHÔNG GIAN LÀM VIỆC", "Eyebrow"))
+        side.addSpacing(20)
         self.navigation = QListWidget()
         self.navigation.setObjectName("Navigation")
         self.navigation.setIconSize(QSize(19, 19))
         self.navigation.setSpacing(2)
         self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.navigation.setFocusPolicy(Qt.NoFocus)
-        self.navigation_icons = ["camera", "video", "people", "history", "settings"]
-        for title, icon_name in zip(("Camera trực tiếp", "Video", "Hồ sơ người", "Lịch sử xuất hiện", "Cài đặt"), self.navigation_icons):
+        self.navigation_icons = ["camera", "video", "people", "history", "mail", "settings"]
+        for title, icon_name in zip(("Camera trực tiếp", "Video", "Hồ sơ người", "Lịch sử xuất hiện", "Thông báo", "Cài đặt"), self.navigation_icons):
             item = QListWidgetItem(line_icon(icon_name), title)
             item.setSizeHint(QSize(180, 46))
             self.navigation.addItem(item)
@@ -83,7 +86,7 @@ class MainWindow(QMainWindow):
         footer_icon = label("")
         footer_icon.setPixmap(line_icon("shield", "#74889f", 18).pixmap(18, 18))
         footer.addWidget(footer_icon, 0, Qt.AlignTop)
-        footer.addWidget(label("Dữ liệu trên thiết bị\nCamera và video", "Muted", True), 1)
+        footer.addWidget(label("Xử lý cục bộ", "Muted", True), 1)
         side.addSpacing(8)
         side.addLayout(footer)
         layout.addWidget(self.sidebar)
@@ -91,7 +94,8 @@ class MainWindow(QMainWindow):
         self.camera_page, self.video_page = CameraPage(self), VideoPage(self)
         self.persons_page, self.history_page = PersonsPage(self), HistoryPage(self)
         self.settings_page = SettingsPage(self)
-        for page in (self.camera_page, self.video_page, self.persons_page, self.history_page, self.settings_page):
+        self.notifications_page = NotificationsPage(self)
+        for page in (self.camera_page, self.video_page, self.persons_page, self.history_page, self.notifications_page, self.settings_page):
             if page is self.settings_page:
                 self.pages.addWidget(page)
             else:
@@ -108,15 +112,15 @@ class MainWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_frame)
         self.timer.start(33)
-        self.statusBar().showMessage("Dữ liệu được xử lý cục bộ.")
         self.backend_status = label("Chưa tải mô hình", "Muted")
         self.statusBar().addPermanentWidget(self.backend_status)
         self.statusBar().setContentsMargins(12, 0, 12, 0)
         self.model_loading = True
         self.model_error = ""
         self.backend_status.setText("Đang tải mô hình…")
-        self.backend_status.setToolTip("Mô hình đang được khởi tạo ở worker nền.")
+        self.backend_status.setToolTip("Đang khởi tạo mô hình.")
         self.jobs.run(self.load_model, self.model_loaded)
+        self.notifications_page.restore()
 
     def load_model(self):
         try:
@@ -147,15 +151,24 @@ class MainWindow(QMainWindow):
             self.persons_page.refresh()
         elif index == 3:
             self.history_page.refresh()
+        elif index == 4:
+            self.notifications_page.refresh_logs()
 
     def start_media(self, kind, source, logging):
         self.camera_page.canvas.clear()
         self.video_page.canvas.clear()
+        self.camera_page.presence.clear()
+        self.video_page.presence.clear()
+        self.last_frame = None
         self.pipeline.command("open_camera" if kind == "camera" else "open_video", source)
         self.pipeline.command("logging", logging)
 
     def stop_media(self):
         self.pipeline.command("stop")
+        for page in (self.camera_page, self.video_page):
+            page.canvas.clear()
+            page.presence.clear()
+        self.last_frame = None
 
     def set_logging(self, kind, enabled):
         if self.pipeline.snapshot()["kind"] == kind:
@@ -163,9 +176,10 @@ class MainWindow(QMainWindow):
 
     def refresh_frame(self):
         state = self.pipeline.snapshot()
+        self.video_page.update_position(state)
         if self.model_loading:
             self.backend_status.setText("Đang tải mô hình…")
-            self.backend_status.setToolTip("Mô hình đang được khởi tạo ở worker nền.")
+            self.backend_status.setToolTip("Đang khởi tạo mô hình.")
         elif self.model_error:
             self.backend_status.setText("Lỗi tải mô hình")
             self.backend_status.setToolTip(self.model_error)
@@ -175,17 +189,28 @@ class MainWindow(QMainWindow):
         if self.engine.warning and self.engine.warning != self.last_engine_warning:
             self.last_engine_warning = self.engine.warning
             self.show_message(self.engine.warning)
-        if state["kind"] == "video":
-            self.video_page.update_position(state)
-        else:
+        if state["kind"] != "video":
             logging = self.camera_page.logging.isChecked() and state["kind"] == "camera"
             status = "Đang ghi lịch sử" if logging and state["playing"] else "Lịch sử không ghi"
             activity = "Đang chạy" if state["playing"] else "Đã dừng"
-            warning = " · Có cảnh báo, xem Cài đặt" if self.engine.warning else ""
+            warning = " · Cảnh báo backend" if self.engine.warning else ""
             self.camera_page.status.setText(f"{activity}  ·  {state['fps']:.1f} FPS xử lý  ·  {self.engine.backend}  ·  {status}{warning}")
             self.camera_page.status.setToolTip(self.engine.warning)
         result = self.pipeline.results.peek()
         raw = self.pipeline.raw.peek()
+        if getattr(self, "display_epoch", None) != self.pipeline.epoch:
+            self.display_epoch = self.pipeline.epoch
+            self.last_frame = None
+            for page in (self.camera_page, self.video_page):
+                page.canvas.clear()
+                page.presence.clear()
+        if result and result[0].epoch == self.pipeline.epoch:
+            candidate, candidate_labels, _ = result
+            target = self.camera_page if candidate.source_type == "camera" else self.video_page
+            if raw is None or abs(raw.clock-candidate.clock) < max(0.4, 1/self.settings.recognition_hz):
+                target.presence.update_people(candidate_labels)
+            else:
+                target.presence.clear()
         # Render results on their OWN frames: no boxes from an old timeline.
         # Capture remains paced; display falls back to raw preview if inference lags.
         labels = []
@@ -211,13 +236,15 @@ class MainWindow(QMainWindow):
         self.closing = True
         self.jobs.accepting = False
         self.centralWidget().setEnabled(False)
-        self.statusBar().showMessage("Đang dừng worker và lưu phiên xuất hiện…")
+        self.statusBar().showMessage("Đang đóng ứng dụng…")
         self.timer.stop()
         def close_resources():
             try:
                 # Complete enrollment/history jobs before shutting down the DB.
                 self.jobs.pool.shutdown(wait=True)
                 ok = self.pipeline.shutdown()
+                mail_ok = self.notifications.shutdown()
+                ok = ok and mail_ok
                 if ok:
                     self.db.close()
                 self.closed.emit(ok)
@@ -232,5 +259,5 @@ class MainWindow(QMainWindow):
             self.close()
         else:
             self.closing = False
-            self.statusBar().showMessage("Driver/inference chưa dừng. Đợi tác vụ hoàn thành rồi đóng lại; dữ liệu chưa bị đóng cưỡng bức.")
-            QMessageBox.warning(self, "Đang chờ worker", "Không thể hủy lời gọi driver đang bị chặn. Hãy đợi rồi đóng cửa sổ lại.")
+            self.statusBar().showMessage("Tác vụ nền chưa dừng. Chờ tác vụ hoàn tất rồi thử đóng lại.")
+            QMessageBox.warning(self, "Đang đóng ứng dụng", "Tác vụ nền chưa dừng. Chờ tác vụ hoàn tất rồi thử lại.")

@@ -11,7 +11,7 @@ from app.ui.theme import CheckBox as QCheckBox, ComboBox as QComboBox, DateEdit 
 
 def history_stamp(row, field_name):
     if row["source_type"] == "video":
-        return timeline(row[field_name]) + "\nTimeline video"
+        return timeline(row[field_name]) + "\nVị trí video"
     stamp = datetime.fromtimestamp(row[field_name]).astimezone()
     offset = stamp.strftime("%z")
     return stamp.strftime("%d/%m/%Y\n%H:%M:%S") + " UTC" + offset[:3] + ":" + offset[3:]
@@ -29,7 +29,7 @@ class HistoryPage(QWidget):
         super().__init__()
         self.window, self.rows = window, []
         layout = page_layout(self)
-        page_header(layout, "Lịch sử xuất hiện", "Mỗi dòng là một phiên xuất hiện, từ lần nhận diện đầu tiên đến cuối cùng.",
+        page_header(layout, "Lịch sử xuất hiện", "Tra cứu và xuất các phiên.",
                     action("Xuất CSV", self.export, "primary", "download"))
         box, body = panel()
         filters = FlowLayout(spacing=10)
@@ -45,7 +45,7 @@ class HistoryPage(QWidget):
         filters.addWidget(self.kind)
         self.source = QLineEdit()
         self.source.setMinimumWidth(240)
-        self.source.setPlaceholderText("Định danh nguồn camera / video…")
+        self.source.setPlaceholderText("Nguồn camera / video…")
         self.source.setClearButtonEnabled(True)
         filters.addWidget(self.source)
         filters.addWidget(action("Áp dụng bộ lọc", self.refresh))
@@ -93,14 +93,14 @@ class HistoryPage(QWidget):
         table_box, table_body = panel()
         table_body.setContentsMargins(0, 0, 0, 0)
         self.table = QTableWidget(0, 7)
-        self.table.setHorizontalHeaderLabels(["Mã phiên", "Mã ID", "Họ tên", "Check-in", "Check-out", "Nguồn", "Trạng thái"])
+        self.table.setHorizontalHeaderLabels(["Mã phiên", "Mã ID", "Họ tên", "Lần đầu", "Lần cuối", "Nguồn", "Trạng thái"])
         setup_table(self.table)
         self.table.hideColumn(0)
         self.configure_columns()
         self.table.sortItems(3, Qt.DescendingOrder)
         table_body.addWidget(self.table)
         layout.addWidget(table_box, 1)
-        self.count = label("0 phiên · Áp dụng bộ lọc để cập nhật kết quả.", "Muted", True)
+        self.count = label("0 phiên", "Muted", True)
         layout.addWidget(self.count)
 
     def configure_columns(self):
@@ -152,7 +152,7 @@ class HistoryPage(QWidget):
         for index in range(self.table.rowCount()):
             self.table.setRowHeight(index, max(74, self.table.rowHeight(index)))
         self.table.setSortingEnabled(True)
-        self.count.setText(f"{len(rows)} phiên · Video dùng timeline; camera dùng giờ thực kèm múi giờ. Cuộn ngang để xem đầy đủ các cột; kéo tiêu đề để đổi độ rộng.")
+        self.count.setText(f"{len(rows)} phiên")
 
     def delete(self, ids):
         def remove():
@@ -163,11 +163,11 @@ class HistoryPage(QWidget):
 
     def delete_selected(self):
         ids = [self.table.item(index.row(), 0).text() for index in self.table.selectionModel().selectedRows()]
-        if ids and confirm(self, f"Dừng nguồn và xóa {len(ids)} phiên đã chọn? Hồ sơ người được giữ nguyên."):
+        if ids and confirm(self, f"Dừng nguồn và xóa {len(ids)} phiên? Hồ sơ được giữ lại."):
             self.delete(ids)
 
     def delete_all(self):
-        if confirm(self, "Dừng nguồn và xóa TOÀN BỘ lịch sử, kể cả ngoài bộ lọc? Hồ sơ và embedding được giữ nguyên."):
+        if confirm(self, "Dừng nguồn và xóa toàn bộ lịch sử, kể cả ngoài bộ lọc? Hồ sơ được giữ lại."):
             self.delete(None)
 
     def export(self):

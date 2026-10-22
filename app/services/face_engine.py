@@ -20,7 +20,7 @@ class FaceEngine:
         folder = root / "models" / "buffalo_l"
         required = ("det_10g.onnx", "w600k_r50.onnx")
         if any(not (folder / f).is_file() for f in required):
-            raise RuntimeError(f"Thiếu mô hình buffalo_l tại {folder}. Xem README: cài mô hình thủ công; ứng dụng không tự tải.")
+            raise RuntimeError(f"Thiếu mô hình buffalo_l tại {folder}.")
         providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if cuda else ["CPUExecutionProvider"]
         app = FaceAnalysis(name="buffalo_l", root=str(root),
                            allowed_modules=["detection", "recognition"], providers=providers)
@@ -45,13 +45,13 @@ class FaceEngine:
             cuda = self.settings.backend != "cpu" and "CUDAExecutionProvider" in available
             self.warning = ""
             if self.settings.backend == "cuda" and not cuda:
-                self.warning = "CUDAExecutionProvider không khả dụng; dùng CPU. Kiểm tra gói GPU, CUDA/cuDNN và PATH."
+                self.warning = "CUDAExecutionProvider không khả dụng; đang dùng CPU."
             try:
                 self.analysis = self._build(cuda)
             except Exception as exc:
                 if not cuda:
                     raise
-                self.warning = f"CUDA không chạy được ({exc}); đã chuyển CPU. Kiểm tra CUDA 12.x / cuDNN 9 / driver."
+                self.warning = f"CUDA không khởi tạo được ({exc}); đã chuyển sang CPU."
                 self.analysis = self._build(False)
 
     def detect(self, image):
@@ -62,7 +62,7 @@ class FaceEngine:
             except Exception as exc:
                 if not self.backend.startswith("CUDA"):
                     raise
-                self.warning = f"Lỗi CUDA khi inference: {exc}. Đã chuyển CPU."
+                self.warning = f"Lỗi CUDA khi nhận diện: {exc}. Đã chuyển sang CPU."
                 self.analysis = self._build(False)
                 faces = self.analysis.get(image)
             output = []

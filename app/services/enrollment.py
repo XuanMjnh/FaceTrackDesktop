@@ -8,7 +8,7 @@ def read_image(path):
     import cv2
     image = cv2.imdecode(np.fromfile(str(path), dtype=np.uint8), cv2.IMREAD_COLOR)
     if image is None:
-        raise ValueError("Không đọc được ảnh. Hãy chọn JPG/PNG hợp lệ.")
+        raise ValueError("Không đọc được ảnh.")
     return image
 
 
@@ -20,11 +20,11 @@ class Enrollment:
         image = read_image(path)
         faces = self.engine.detect(image)
         if len(faces) != 1:
-            raise ValueError("Không tìm thấy khuôn mặt hợp lệ" if not faces else "Ảnh có nhiều khuôn mặt. Vui lòng chọn ảnh chỉ có một người.")
+            raise ValueError("Không phát hiện khuôn mặt." if not faces else "Ảnh cần có đúng một khuôn mặt.")
         face = faces[0]
         x1, y1, x2, y2 = face.bbox
         if face.confidence < 0.6 or min(x2-x1, y2-y1) < 40:
-            raise ValueError("Khuôn mặt quá nhỏ hoặc chất lượng phát hiện thấp; chọn ảnh rõ hơn.")
+            raise ValueError("Khuôn mặt quá nhỏ hoặc không đủ rõ.")
         duplicate = FaceMatcher(self.db.gallery(), threshold=0.65, margin=0).match(face.embedding)
         return image, face.embedding, duplicate
 
@@ -40,7 +40,7 @@ class Enrollment:
             directory.mkdir(parents=True, exist_ok=True)
             ok, encoded = cv2.imencode(".jpg", image)
             if not ok:
-                raise ValueError("Không thể mã hóa ảnh")
+                raise ValueError("Không mã hóa được ảnh.")
             encoded.tofile(str(target))
             old = self.db.add_reference(pid, target, embedding, replace_id)
         except Exception:

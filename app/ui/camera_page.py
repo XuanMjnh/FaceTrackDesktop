@@ -3,13 +3,14 @@ from app.services.camera_service import discover_cameras
 from app.ui.common import button, VideoCanvas
 from app.ui.theme import page_layout, page_header, panel, action, label, FlowLayout
 from app.ui.theme import CheckBox as QCheckBox, ComboBox as QComboBox
+from app.ui.presence_panel import PresencePanel
 
 class CameraPage(QWidget):
     def __init__(self, window):
         super().__init__()
         self.window = window
         layout = page_layout(self)
-        page_header(layout, "Camera trực tiếp", "Theo dõi hình ảnh và ghi nhận các phiên xuất hiện.")
+        page_header(layout, "Camera trực tiếp", "Nhận diện trực tiếp.")
         box, body = panel()
         controls = FlowLayout(spacing=8)
         device = QWidget()
@@ -29,9 +30,15 @@ class CameraPage(QWidget):
         controls.addWidget(action("Chụp ảnh", self.snapshot))
         body.addLayout(controls)
         self.logging = QCheckBox("Ghi lịch sử xuất hiện")
-        self.logging.setToolTip("Chỉ bật khi đã có sự cho phép phù hợp. Mặc định chỉ xem trước.")
+        self.logging.setToolTip("Chỉ ghi lịch sử khi được phép.")
         self.logging.toggled.connect(lambda enabled: window.set_logging("camera", enabled))
-        body.addWidget(self.logging)
+        options = FlowLayout(spacing=20)
+        options.addWidget(self.logging)
+        self.alerts = QCheckBox("Thông báo khi phát hiện")
+        self.alerts.setToolTip("Cấu hình email tại trang Thông báo.")
+        self.alerts.toggled.connect(lambda enabled: window.notifications.set_enabled("camera", enabled))
+        options.addWidget(self.alerts)
+        body.addLayout(options)
         layout.addWidget(box)
         screen, screen_layout = panel()
         heading = QHBoxLayout()
@@ -41,12 +48,16 @@ class CameraPage(QWidget):
         screen_layout.addLayout(heading)
         self.canvas = VideoCanvas(window.settings)
         self.canvas.empty_title = "Chưa kết nối camera"
-        self.canvas.empty_hint = "Chọn thiết bị và nhấn Bắt đầu camera."
+        self.canvas.empty_hint = "Chọn thiết bị camera."
         screen_layout.addWidget(self.canvas, 1)
         self.status = label("Chưa mở camera · Lịch sử đang tắt", "Muted", True)
         self.status.setTextInteractionFlags(self.status.textInteractionFlags())
         screen_layout.addWidget(self.status)
-        layout.addWidget(screen, 1)
+        view = QHBoxLayout()
+        view.addWidget(screen, 1)
+        self.presence = PresencePanel()
+        view.addWidget(self.presence)
+        layout.addLayout(view, 1)
 
 
     def scan(self):
@@ -55,7 +66,7 @@ class CameraPage(QWidget):
     def cameras_found(self, cameras):
         self.camera.clear()
         self.camera.addItems([str(x) for x in cameras] or [str(self.window.settings.camera)])
-        self.status.setText(f"Tìm thấy {len(cameras)} camera. Có thể nhập mã thiết bị thủ công.")
+        self.status.setText(f"Camera khả dụng: {len(cameras)}")
 
     def start(self):
         try:
@@ -63,16 +74,16 @@ class CameraPage(QWidget):
             if index < 0:
                 raise ValueError()
         except ValueError:
-            QMessageBox.warning(self, "Camera", "Mã camera phải là số nguyên không âm")
+            QMessageBox.warning(self, "Camera", "Mã thiết bị phải là số nguyên không âm.")
             return
         self.window.start_media("camera", index, self.logging.isChecked())
 
     def snapshot(self):
         frame = self.window.pipeline.raw.peek()
         if frame is None or frame.source_type != "camera":
-            QMessageBox.information(self, "Chụp ảnh", "Chưa có khung hình camera")
+            QMessageBox.information(self, "Chụp ảnh", "Chưa có khung hình.")
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Lưu ảnh kiểm tra", "camera.jpg", "JPEG (*.jpg)")
+        path, _ = QFileDialog.getSaveFileName(self, "Lưu ảnh", "camera.jpg", "JPEG (*.jpg)")
         if path:
             def save():
                 import cv2
@@ -80,4 +91,4 @@ class CameraPage(QWidget):
                 if not ok:
                     raise ValueError("Không mã hóa được ảnh")
                 encoded.tofile(path)
-            self.window.jobs.run(save, lambda _: self.status.setText("Đã lưu ảnh: " + path))
+            self.window.jobs.run(save, lambda _: self.status.setText("Đã lưu ảnh."))
