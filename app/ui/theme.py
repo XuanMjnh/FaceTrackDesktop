@@ -123,7 +123,7 @@ QCalendarWidget QAbstractItemView { selection-background-color: #E8EBEF; selecti
 class GeometricBackground(QWidget):
     def __init__(self):
         super().__init__()
-        image = Path(__file__).resolve().parent / "assets" / "white-geometrical-shapes-background.jpg"
+        image = Path(__file__).resolve().parent / "assets" / "white-geometrical-shapes-background-blurred.jpg"
         self._source = QPixmap(str(image))
         self._scaled = QPixmap()
         self.setAttribute(Qt.WA_OpaquePaintEvent)
@@ -139,7 +139,7 @@ class GeometricBackground(QWidget):
         x = (self.width() - self._scaled.width()) // 2
         y = (self.height() - self._scaled.height()) // 2
         painter.drawPixmap(x, y, self._scaled)
-        painter.fillRect(self.rect(), QColor(255, 255, 255, 72))
+        painter.fillRect(self.rect(), QColor(218, 221, 226, 108))
 
 
 def apply_theme(window):
