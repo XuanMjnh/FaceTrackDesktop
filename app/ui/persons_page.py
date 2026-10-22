@@ -4,7 +4,7 @@ from PySide6.QtGui import QPixmap, QIcon, QColor, QFont
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTableWidget,
     QFileDialog, QInputDialog, QMessageBox, QDialog, QListWidget, QListWidgetItem, QDialogButtonBox, QHeaderView)
 from app.ui.common import button, confirm, fill_table
-from app.ui.theme import page_layout, page_header, panel, action, label, FlowLayout, setup_table
+from app.ui.theme import page_layout, page_header, panel, action, label, FlowLayout, setup_table, line_icon
 
 class PersonsPage(QWidget):
     def __init__(self, window):
@@ -81,9 +81,9 @@ class PersonsPage(QWidget):
             if row["avatar"]:
                 self.table.item(i, 0).setIcon(QIcon(row["avatar"]))
             self.table.setRowHeight(i, 64)
-            self.table.item(i, 1).setFont(QFont("Consolas", 9))
+            self.table.item(i, 1).setFont(QFont(self.font().family(), 9))
             self.table.item(i, 4).setTextAlignment(Qt.AlignCenter)
-            self.table.item(i, 3).setForeground(QColor("#237653" if row["is_active"] else "#7b8492"))
+            self.table.item(i, 3).setForeground(QColor("#3D7554" if row["is_active"] else "#75837A"))
         self.table.setSortingEnabled(True)
         self.configure_columns()
         self.count.setText(f"{len(rows)} hồ sơ")
@@ -210,6 +210,7 @@ class PersonsPage(QWidget):
         button("Xóa ảnh chọn", delete_ref, controls)
         layout.addLayout(controls)
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.button(QDialogButtonBox.Close).setIcon(line_icon("close"))
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
         load()

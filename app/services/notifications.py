@@ -309,9 +309,9 @@ class NotificationService:
                 return
             account = dict(self.account)
         _, _, kind, source, stamp, people, test = event
-        subject = "[FaceTrack] Kiểm tra email" if test else "[FaceTrack] Phát hiện người — " + ("Camera" if kind == "camera" else "Video")
+        subject = "[Tìm Người] Kiểm tra email" if test else "[Tìm Người] Phát hiện người — " + ("Camera" if kind == "camera" else "Video")
         if test:
-            content = "Đây là email kiểm tra từ FaceTrack Desktop."
+            content = "Đây là email kiểm tra từ Tìm Người."
         else:
             when = timeline(stamp) if kind == "video" else datetime.fromtimestamp(stamp).astimezone().isoformat(timespec="seconds")
             names = "\n".join(f"- {name}" + (f" | ID: {key}" if key != "__unknown__" else "") for key, name in people.items())

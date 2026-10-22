@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
     def __init__(self, settings, db, engine=None):
         super().__init__()
         self.settings, self.db = settings, db
-        self.setWindowTitle("FaceTrack Desktop")
+        self.setWindowTitle("Tìm Người")
         apply_theme(self)
         available = QApplication.primaryScreen().availableGeometry()
         self.setMinimumSize(min(980, max(640, available.width()-24)),
@@ -57,12 +57,12 @@ class MainWindow(QMainWindow):
         side.setSpacing(10)
         brand = QHBoxLayout()
         brand.setSpacing(10)
-        mark = label("F", "BrandMark")
+        mark = label("", "BrandMark")
         mark.setFixedSize(34, 34)
         mark.setAlignment(Qt.AlignCenter)
-        mark.setStyleSheet("background:#2867c7;color:white;border-radius:7px;font-size:22px;font-weight:600;")
+        mark.setPixmap(line_icon("eye", "#F28C28", 23).pixmap(QSize(23, 23)))
         brand.addWidget(mark)
-        brand.addWidget(label("FaceTrack", "Brand"))
+        brand.addWidget(label("Tìm Người", "Brand"))
         brand.addStretch()
         side.addLayout(brand)
         side.addSpacing(20)
@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
         side.addWidget(divider)
         footer = QHBoxLayout()
         footer_icon = label("")
-        footer_icon.setPixmap(line_icon("shield", "#74889f", 18).pixmap(18, 18))
+        footer_icon.setPixmap(line_icon("shield", "#E57958", 18).pixmap(18, 18))
         footer.addWidget(footer_icon, 0, Qt.AlignTop)
         footer.addWidget(label("Xử lý cục bộ", "Muted", True), 1)
         side.addSpacing(8)
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
     def change_page(self, index):
         self.pages.setCurrentIndex(index)
         for row, name in enumerate(self.navigation_icons):
-            self.navigation.item(row).setIcon(line_icon(name, "#2867c7" if row == index else "#65758b"))
+            self.navigation.item(row).setIcon(line_icon(name, "#C26949" if row == index else "#7F9186"))
         if index == 2:
             self.persons_page.refresh()
         elif index == 3:

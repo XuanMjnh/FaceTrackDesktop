@@ -144,10 +144,10 @@ class HistoryPage(QWidget):
             row = by_id[self.table.item(index, 0).text()]
             self.table.item(index, 5).setToolTip(row["source_id"])
             for column in (1, 5):
-                self.table.item(index, column).setFont(QFont("Consolas", 9))
+                self.table.item(index, column).setFont(QFont(self.font().family(), 9))
             for column, field in ((3, "first_seen"), (4, "last_seen")):
                 self.table.item(index, column).setToolTip(display_time(row, field))
-            self.table.item(index, 6).setForeground(QColor("#237653" if row["status"] == "open" else "#68768a"))
+            self.table.item(index, 6).setForeground(QColor("#3D7554" if row["status"] == "open" else "#63716B"))
         self.table.resizeRowsToContents()
         for index in range(self.table.rowCount()):
             self.table.setRowHeight(index, max(74, self.table.rowHeight(index)))

@@ -4,7 +4,7 @@ from dataclasses import replace
 
 
 def main():
-    parser = argparse.ArgumentParser(description="FaceTrack Desktop")
+    parser = argparse.ArgumentParser(description="Tìm Người")
     parser.add_argument("--backend", choices=("auto", "cpu", "cuda"))
     parser.add_argument("--diagnose", action="store_true", help="Load models and exercise both networks without GUI")
     args = parser.parse_args()
@@ -25,13 +25,16 @@ def main():
     from app.config import home_dir
     from app.services.database import Database
     from app.ui.main_window import MainWindow
+    from app.ui.theme import brand_icon
     application = QApplication(sys.argv)
-    application.setApplicationName("FaceTrack Desktop")
+    application.setApplicationName("Tìm Người")
+    application.setApplicationDisplayName("Tìm Người")
+    application.setWindowIcon(brand_icon())
     # Single process per settings root prevents concurrent session writers.
     lock = QLockFile(str(home_dir() / "facetrack.lock"))
     lock.setStaleLockTime(0)
     if not lock.tryLock(100):
-        QMessageBox.warning(None, "FaceTrack Desktop", "Ứng dụng đã chạy trong vùng dữ liệu này.")
+        QMessageBox.warning(None, "Tìm Người", "Ứng dụng đã chạy trong vùng dữ liệu này.")
         return 1
     try:
         db = Database(settings.database_path)

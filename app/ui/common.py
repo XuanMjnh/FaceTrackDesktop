@@ -14,7 +14,7 @@ class Jobs(QObject):
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="ui-task")
         self.accepting = True
         self.done.connect(lambda callback, result: callback(result) if callback and self.accepting else None)
-        self.error.connect(lambda text: QMessageBox.warning(parent, "FaceTrack Desktop", text) if self.accepting else None)
+        self.error.connect(lambda text: QMessageBox.warning(parent, "Tìm Người", text) if self.accepting else None)
 
     def run(self, task, callback=None):
         if not self.accepting:
@@ -99,23 +99,25 @@ class VideoCanvas(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         if self.image is None:
-            painter.fillRect(self.rect(), QColor("#eef2f6"))
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor("#EDF5EF"))
+            painter.drawRoundedRect(QRectF(self.rect()), 12, 12)
             center = self.rect().center()
             icon_rect = QRectF(center.x()-31, center.y()-66, 62, 62)
-            painter.setPen(QPen(QColor("#dce3ec"), 1))
+            painter.setPen(QPen(QColor("#DFEAE2"), 1))
             painter.setBrush(QColor("#ffffff"))
             painter.drawRoundedRect(icon_rect, 12, 12)
-            line_icon(self.empty_icon, "#7b8fa9", 28).paint(painter, int(center.x()-14), int(center.y()-49), 28, 28)
+            line_icon(self.empty_icon, "#E57958", 28).paint(painter, int(center.x()-14), int(center.y()-49), 28, 28)
             font = self.font()
             font.setPointSize(12)
             font.setWeight(QFont.DemiBold)
             painter.setFont(font)
-            painter.setPen(QColor("#435770"))
+            painter.setPen(QColor("#2A3C30"))
             painter.drawText(QRectF(16, center.y()+9, self.width()-32, 26), Qt.AlignCenter, self.empty_title)
             font.setPointSize(10)
             font.setWeight(QFont.Normal)
             painter.setFont(font)
-            painter.setPen(QColor("#77889c"))
+            painter.setPen(QColor("#687D6E"))
             painter.drawText(QRectF(24, center.y()+40, self.width()-48, 50), Qt.AlignHCenter | Qt.AlignTop | Qt.TextWordWrap, self.empty_hint)
             return
         painter.fillRect(self.rect(), QColor("#18212c"))

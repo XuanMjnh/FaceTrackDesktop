@@ -1,6 +1,6 @@
-﻿# FaceTrack Desktop
+# Tìm Người
 
-FaceTrack Desktop là ứng dụng desktop trên Windows để đăng ký hồ sơ
+Tìm Người là ứng dụng desktop trên Windows để đăng ký hồ sơ
 khuôn mặt, nhận diện người trong camera trực tiếp hoặc video, theo dõi
 các phiên xuất hiện và tra cứu/xuất lịch sử. Ứng dụng dùng InsightFace
 và ONNX Runtime; ảnh tham chiếu, embedding và cơ sở dữ liệu được lưu
@@ -473,7 +473,7 @@ tools\build_exe.bat
 ```
 
 Script dùng PyInstaller ở chế độ `onedir`; đầu ra nằm trong
-`dist\FaceTrackDesktop\`. Model vẫn phải được cài riêng trong profile
+`dist\TimNguoi\`. Model vẫn phải được cài riêng trong profile
 người dùng. Script này tạo bản CPU; không đóng gói NVIDIA driver/CUDA hệ thống.
 
 ## Cấu trúc source code
