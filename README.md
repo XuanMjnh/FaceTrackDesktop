@@ -29,8 +29,7 @@ chủ SMTP do người dùng cấu hình. Ảnh camera/video và embedding khôn
 Ứng dụng có sáu trang chính:
 
 1.  **Camera trực tiếp**
-    - Quét camera ở các chỉ số `0–7`, hoặc nhập chỉ số thiết bị thủ
-      công.
+    - Quét và chọn camera theo tên thiết bị; có thể nhập chỉ số nếu cần.
     - Hiển thị khung hình, bounding box, nhãn nhận diện, họ tên, ID và
       điểm tương đồng theo cài đặt.
     - Chụp khung hình hiện tại thành ảnh JPEG.
@@ -165,7 +164,7 @@ flowchart TB
 |--------------------------|-------------------------------------------------------------------------------------|
 | Ngôn ngữ                 | Python 3.11 x64                                                                     |
 | Giao diện desktop        | PySide6 `6.8.3`, Qt Widgets                                                         |
-| Đọc camera, ảnh và video | OpenCV Headless `4.10.0.84`                                                         |
+| Đọc camera, ảnh và video | OpenCV `4.10.0.84` với DirectShow và Media Foundation                             |
 | Nhận diện khuôn mặt      | InsightFace `0.7.3`, model `buffalo_l`                                              |
 | Runtime suy luận CPU     | ONNX Runtime `1.20.1`                                                               |
 | Runtime suy luận GPU     | ONNX Runtime GPU `1.20.2`                                                           |
@@ -337,8 +336,8 @@ khởi động lại để áp dụng.
 
 ### Nhận diện camera
 
-1.  Mở **Camera trực tiếp** và bấm **Quét camera**, hoặc nhập mã thiết
-    bị như `0`.
+1.  Mở **Camera trực tiếp**, chọn tên camera trong danh sách hoặc nhập
+    mã thiết bị như `0`.
 2.  Bấm **Bắt đầu camera**. Kiểm tra quyền Camera Privacy của Windows
     và đóng ứng dụng khác đang giữ camera nếu camera không mở được.
 3.  Bật **Ghi lịch sử xuất hiện** để lưu các phiên nhận diện.
@@ -532,8 +531,8 @@ FaceTrackDesktop/
 - **InsightFace không cài được**: kiểm tra Python 3.11 x64; cài Visual
   C++ Redistributable và Visual Studio Build Tools 2022 với MSVC/Windows
   SDK rồi chạy lại setup.
-- **Không mở được camera**: kiểm tra lần lượt các chỉ số `0`, `1`, …;
-  kiểm tra Windows Camera Privacy và đóng phần mềm khác đang dùng camera.
+- **Không mở được camera**: quét lại thiết bị, kiểm tra Windows Camera
+  Privacy và đóng phần mềm khác đang dùng camera.
 - **Không mở được video**: kiểm tra codec, FPS và số frame. Chuyển video
   có codec không được hỗ trợ sang định dạng MP4 CFR.
 - **CUDA báo thiếu DLL hoặc chuyển sang CPU**: chạy

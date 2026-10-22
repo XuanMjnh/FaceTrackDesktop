@@ -1,11 +1,22 @@
 import sys
 
 
+def camera_names():
+    if sys.platform != "win32":
+        return []
+    try:
+        from PySide6.QtMultimedia import QMediaDevices
+        return [device.description().strip() for device in QMediaDevices.videoInputs()]
+    except Exception:
+        return []
+
+
 def open_capture(source, camera=False):
     import cv2
     if camera and sys.platform == "win32":
         capture = cv2.VideoCapture()
-        for backend in (cv2.CAP_DSHOW, cv2.CAP_MSMF):
+        # Keep camera indices aligned with QMediaDevices' Media Foundation order.
+        for backend in (cv2.CAP_MSMF, cv2.CAP_DSHOW):
             candidate = cv2.VideoCapture(int(source), backend)
             if not candidate.isOpened():
                 candidate.release()

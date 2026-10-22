@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QSpinBox,
     QDoubleSpinBox, QLineEdit, QCheckBox, QPushButton, QMessageBox, QPlainTextEdit, QScrollArea,
     QFileDialog, QSizePolicy)
+from app.services.camera_service import camera_names
 from app.ui.theme import page_layout, page_header, panel, action, label, field, FlowLayout, ResponsiveColumns
 from app.ui.theme import CheckBox as QCheckBox, ComboBox as QComboBox, SpinBox as QSpinBox, DoubleSpinBox as QDoubleSpinBox
 
@@ -23,9 +24,15 @@ class SettingsPage(QWidget):
         body.setContentsMargins(0, 0, 8, 2)
         body.setSpacing(16)
         device, device_body = panel("Thiết bị & hiệu năng")
-        self.camera = QSpinBox()
-        self.camera.setRange(0, 99)
-        self.camera.setValue(s.camera)
+        self.camera = QComboBox()
+        self.camera.setEditable(True)
+        self.camera.setMinimumWidth(190)
+        names = camera_names()
+        for index, name in enumerate(names):
+            self.camera.addItem(name.strip() or f"Camera {index}", index)
+        if self.camera.findData(s.camera) < 0:
+            self.camera.addItem(f"Camera {s.camera}", s.camera)
+        self.camera.setCurrentIndex(self.camera.findData(s.camera))
         device_body.addWidget(field("Camera mặc định", self.camera))
         self.backend = QComboBox()
         self.backend.addItems(["auto", "cpu", "cuda"])
@@ -105,13 +112,16 @@ class SettingsPage(QWidget):
             target.setText(path)
 
     def save(self):
-        new = replace(self.window.settings, camera=self.camera.value(), backend=self.backend.currentText(),
-                      detection_size=int(self.size.currentText()), similarity=self.threshold.value(),
-                      absence_seconds=self.absence.value(), recognition_hz=self.hz.value(),
-                      database_path=self.database.text().strip(), image_dir=self.images.text().strip(),
-                      model_root=self.models.text().strip(), show_name=self.name.isChecked(),
-                      show_id=self.id.isChecked(), show_score=self.score.isChecked())
         try:
+            camera = self.camera.currentData()
+            if camera is None:
+                camera = int(self.camera.currentText())
+            new = replace(self.window.settings, camera=int(camera), backend=self.backend.currentText(),
+                          detection_size=int(self.size.currentText()), similarity=self.threshold.value(),
+                          absence_seconds=self.absence.value(), recognition_hz=self.hz.value(),
+                          database_path=self.database.text().strip(), image_dir=self.images.text().strip(),
+                          model_root=self.models.text().strip(), show_name=self.name.isChecked(),
+                          show_id=self.id.isChecked(), show_score=self.score.isChecked())
             if not all((new.database_path, new.image_dir, new.model_root)):
                 raise ValueError("Các đường dẫn không được để trống")
             new.save()
