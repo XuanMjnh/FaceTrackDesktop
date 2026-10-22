@@ -148,7 +148,7 @@ class NotificationService:
         self.enabled = {"camera": False, "video": False}
         self.source_versions = {"camera": 0, "video": 0}
         self.cooldown = 60
-        self.include_unknown = True
+        self.include_unknown = False
         self.last_sent = {}
         self.pending = queue.Queue(maxsize=32)
         self.stopping = threading.Event()

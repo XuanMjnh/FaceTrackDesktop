@@ -81,7 +81,7 @@ class NotificationsPage(QWidget):
         policy.addWidget(label("Khoảng nghỉ mỗi người / nguồn", "FieldLabel"))
         policy.addWidget(self.cooldown)
         self.unknown = CheckBox("Báo cả khuôn mặt không xác định")
-        self.unknown.setChecked(True)
+        self.unknown.setChecked(False)
         self.unknown.toggled.connect(self.update_policy)
         policy.addWidget(self.unknown)
         policy.addStretch(1)

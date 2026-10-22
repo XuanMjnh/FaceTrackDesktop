@@ -4,10 +4,24 @@ import sys
 def open_capture(source, camera=False):
     import cv2
     if camera and sys.platform == "win32":
-        capture = cv2.VideoCapture(int(source), cv2.CAP_DSHOW)
-        if not capture.isOpened():
-            capture.release()
-            capture = cv2.VideoCapture(int(source), cv2.CAP_MSMF)
+        capture = cv2.VideoCapture()
+        for backend in (cv2.CAP_DSHOW, cv2.CAP_MSMF):
+            candidate = cv2.VideoCapture(int(source), backend)
+            if not candidate.isOpened():
+                candidate.release()
+                continue
+            candidate.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            ready = False
+            for _ in range(3):
+                ok, frame = candidate.read()
+                if ok and frame is not None:
+                    capture.release()
+                    capture = candidate
+                    ready = True
+                    break
+            if ready:
+                break
+            candidate.release()
     else:
         capture = cv2.VideoCapture(source)
     if not capture.isOpened():
