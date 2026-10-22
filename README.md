@@ -1,32 +1,18 @@
-# FaceTrack Desktop
+﻿# FaceTrack Desktop
 
-Ứng dụng desktop Python/PySide6 nhận diện người đã đăng ký bằng InsightFace,
-quản lý ảnh tham chiếu và lưu phiên xuất hiện vào SQLite. Dành cho Windows 10/11,
-Python **3.11 x64**, chạy CPU hoặc NVIDIA CUDA. Giao diện tiếng Việt, xử lý cục bộ.
+FaceTrack Desktop là ứng dụng Windows dùng InsightFace để nhận diện người đã đăng ký, quản lý ảnh tham chiếu và lưu lịch sử xuất hiện vào SQLite. Dữ liệu và xử lý được lưu trên máy. Hỗ trợ Windows 10/11, Python 3.11 x64, CPU và NVIDIA CUDA.
 
-Đây là gói mã nguồn. Gói ZIP không chứa Python, thư viện, mô hình, dữ liệu khuôn
-mặt thật hoặc EXE đã biên dịch. Cần cài môi trường và mô hình trước khi nhận diện.
-Xem `docs/TEST_REPORT.md` để biết chính xác phần đã kiểm thử và phần cần nghiệm thu
-trên thiết bị thật. Ngưỡng 0.45 là điểm khởi đầu để hiệu chỉnh, không phải cam kết
-độ chính xác. Ứng dụng chưa có phát hiện ảnh giả/liveness.
+## 1. Cài đặt bản CPU
 
-## 1. Cài đặt CPU trên Windows
-
-1. Cài Python 3.11 x64 từ <https://www.python.org/downloads/windows/>. Bật Python
-   Launcher (`py`) và Add Python to PATH. Không dùng Python 32 bit.
-2. Cài Microsoft Visual C++ Redistributable 2015–2022 x64. InsightFace 0.7.3 phát
-   hành dạng source nên có thể cần **Visual Studio Build Tools 2022**, workload
-   **Desktop development with C++**, MSVC và Windows SDK:
-   <https://visualstudio.microsoft.com/visual-cpp-build-tools/>.
-3. Giải nén vào thư mục có quyền ghi. Mở Command Prompt tại `FaceTrackDesktop`:
+1. Cài Python 3.11 x64 từ [python.org](https://www.python.org/downloads/windows/), gồm Python Launcher (`py`) và tùy chọn Add Python to PATH. Không dùng Python 32 bit.
+2. Cài Microsoft Visual C++ Redistributable 2015–2022 x64. InsightFace 0.7.3 được cài từ mã nguồn và có thể cần Visual Studio Build Tools 2022, workload Desktop development with C++, MSVC và Windows SDK: [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+3. Giải nén ứng dụng vào thư mục có quyền ghi. Mở Command Prompt tại thư mục `FaceTrackDesktop` và chạy:
 
 ```bat
 setup_windows.bat cpu
 ```
 
-Script tạo `.venv-cpu`, cài NumPy/Cython trước khi build InsightFace, cài dependency
-và chạy `pip check`. Nếu lỗi build extension, kiểm tra C++ Build Tools, mở Developer
-Command Prompt x64 rồi chạy lại. Không tải wheel không rõ nguồn gốc.
+Script tạo môi trường `.venv-cpu`, cài NumPy và Cython trước khi build InsightFace, cài các dependency còn lại và chạy `pip check`. Nếu build extension thất bại, cài C++ Build Tools rồi chạy lại trong Developer Command Prompt x64. Không dùng wheel từ nguồn không xác định.
 
 Cài thủ công tương đương:
 
@@ -37,73 +23,58 @@ py -3.11 -m venv .venv-cpu
 .venv-cpu\Scripts\python -m pip check
 ```
 
-Ứng dụng dùng OpenCV headless để đọc/ghi ảnh và video; toàn bộ hiển thị do PySide6.
-Không cài thêm `opencv-python` trong cùng môi trường vì hai gói dùng chung `cv2`.
+Ứng dụng dùng OpenCV headless để đọc và ghi ảnh/video; giao diện hình ảnh do PySide6 đảm nhiệm. Không cài thêm `opencv-python` trong cùng môi trường vì cả hai gói đều cung cấp module `cv2`.
 
-## 2. Cài mô hình một lần, có chủ ý
+## 2. Cài mô hình
 
-Ứng dụng **không tự tải mô hình hoặc cài package khi chạy**. Mở nguồn phát hành
-chính thức: <https://github.com/deepinsight/insightface/releases/tag/v0.7> và lấy
-`buffalo_l.zip`. Đọc điều khoản mô hình trước khi dùng. Mã InsightFace và trọng số
-có điều khoản khác nhau; trọng số tải sẵn được công bố cho nghiên cứu phi thương
-mại. Liên hệ chủ sở hữu mô hình nếu mục đích sử dụng yêu cầu giấy phép khác:
-<https://github.com/deepinsight/insightface#license>.
+Ứng dụng không tự tải mô hình hoặc cài package khi chạy. Tải `buffalo_l.zip` từ [bản phát hành InsightFace 0.7](https://github.com/deepinsight/insightface/releases/tag/v0.7) và xem [điều khoản sử dụng](https://github.com/deepinsight/insightface#license) trước khi triển khai. Mã InsightFace và trọng số có điều khoản riêng; trọng số tải sẵn được công bố cho nghiên cứu phi thương mại. Mục đích sử dụng khác có thể cần giấy phép từ chủ sở hữu mô hình.
 
-Sau khi tải ZIP bằng trình duyệt, cài từ tệp cục bộ:
+Cài từ tệp ZIP đã tải:
 
 ```bat
 .venv-cpu\Scripts\python tools\install_model.py "C:\Downloads\buffalo_l.zip"
 ```
 
-Mặc định hai tệp cần dùng nằm ở:
+Mặc định, hai tệp mô hình nằm tại:
 
 ```text
 %USERPROFILE%\FaceTrackDesktop\insightface\models\buffalo_l\det_10g.onnx
 %USERPROFILE%\FaceTrackDesktop\insightface\models\buffalo_l\w600k_r50.onnx
 ```
 
-Installer chỉ lấy đúng hai tên tệp, không giải nén đường dẫn tùy ý. Có thể thêm
-`--root "D:\FaceTrack\insightface"` và `--sha256 CHECKSUM` nếu có checksum tin cậy.
-Khi chọn root khác, nhập cùng đường dẫn trong Cài đặt rồi khởi động lại ứng dụng.
-Nếu dùng `FACETRACK_HOME`, cài mô hình và chạy ứng dụng trong cùng biến môi trường.
+Installer chỉ cài hai tệp có tên được yêu cầu và không giải nén đường dẫn tùy ý. Có thể chỉ định thư mục gốc bằng `--root "D:\FaceTrack\insightface"` và checksum bằng `--sha256 CHECKSUM`. Khi dùng thư mục gốc khác, nhập đường dẫn đó trong Cài đặt. Khi dùng biến môi trường `FACETRACK_HOME`, dùng cùng giá trị lúc cài mô hình và chạy ứng dụng.
 
-## 3. Khởi chạy
+## 3. Khởi chạy và sử dụng
+
+Khởi chạy bản CPU:
 
 ```bat
 run_cpu.bat
 ```
 
-`run.bat` cũng chạy bản CPU. Có thể chạy trực tiếp
-`.venv-cpu\Scripts\python main.py` để áp dụng backend lưu trong Cài đặt; tham số
-`--backend cpu|cuda|auto` được ưu tiên hơn cài đặt đã lưu.
+`run.bat` cũng chạy bản CPU. Để dùng backend đã lưu trong Cài đặt:
 
-Trình tự sử dụng:
+```bat
+.venv-cpu\Scripts\python main.py
+```
 
-1. Vào **Cơ sở dữ liệu người → Thêm người**, nhập tên và chọn ảnh rõ, chỉ có một
-   khuôn mặt. Ảnh không có mặt, nhiều mặt hoặc mặt quá nhỏ sẽ bị từ chối.
-2. Chọn hồ sơ → **Ảnh tham chiếu** để xem/thêm/thay/xóa nhiều ảnh. Nếu có khuôn mặt
-   tương đồng cao với hồ sơ khác, hộp thoại cho phép thêm vào hồ sơ hiện có, tiếp
-   tục hồ sơ đã chọn/mới hoặc hủy. Cảnh báo tương đồng không chứng minh hai ảnh là
-   cùng một người.
-3. Vào **Camera**, bấm **Quét camera** hoặc nhập mã thiết bị (0, 1, …), rồi Bắt đầu.
-   Danh sách quét thử mã 0–7; có thể nhập mã khác. Kiểm tra Windows Camera Privacy
-   và đóng ứng dụng khác nếu camera đang bận. Nút Chụp ảnh lưu ảnh kiểm tra tại
-   đường dẫn người dùng chọn, không tự đăng ký người trong ảnh.
-4. Hoặc vào **Video → Mở video**. Phát/tạm dừng, dừng về đầu, kéo thanh tua và chọn
-   0.25x, 0.5x, 1x, 1.5x hoặc 2x. Chỉ một nguồn camera/video hoạt động mỗi lúc.
-   Âm thanh video không được phát. Có thể cần codec phù hợp cho định dạng khác MP4/AVI.
-5. **Ghi lịch sử mặc định tắt** cho cả camera và video. Bật rõ ràng khi được phép
-   thu thập. Tắt ghi lịch sử vẫn nhận diện và hiển thị để xem trước.
-6. Vào **Lịch sử xuất hiện**, tìm tên/ID, chọn nguồn, lọc ngày camera hoặc khoảng
-   giây video, rồi Áp dụng. Bấm tiêu đề cột để sắp xếp; Ctrl/Shift để chọn nhiều
-   hàng. CSV xuất đúng các hàng đang hiển thị sau lần áp dụng bộ lọc gần nhất.
-7. Cài đặt được lưu và áp dụng ở lần khởi động tiếp theo. Nút kiểm tra môi trường
-   kiểm tra cấu hình đang chạy; sau đổi backend, hãy mở lại trước khi kiểm tra.
+Tham số `--backend cpu|cuda|auto` được ưu tiên hơn backend đã lưu.
+
+Khi mở ứng dụng, model được nạp ở worker nền. Thanh trạng thái hiển thị tiến trình nạp và backend sau khi khởi tạo. Nếu model không nạp được, ứng dụng hiển thị lỗi tại thanh trạng thái. Giao diện vẫn phản hồi trong lúc nạp.
+
+Quy trình sử dụng:
+
+1. Mở **Cơ sở dữ liệu người → Thêm người**, nhập tên và chọn ảnh có một khuôn mặt rõ. Ảnh không có mặt, có nhiều mặt hoặc mặt quá nhỏ sẽ bị từ chối.
+2. Chọn hồ sơ → **Ảnh tham chiếu** để xem, thêm, thay hoặc xóa ảnh. Nếu ảnh mới tương đồng cao với hồ sơ khác, hộp thoại cho phép thêm vào hồ sơ hiện có, tiếp tục với hồ sơ đã chọn, tạo hồ sơ mới hoặc hủy. Mức tương đồng không xác nhận hai ảnh là cùng một người.
+3. Mở **Camera**, bấm **Quét camera** hoặc nhập mã thiết bị (0, 1, …), sau đó bấm **Bắt đầu camera**. Quét thử mã 0–7; có thể nhập mã khác. Kiểm tra quyền Camera Privacy của Windows và đóng ứng dụng khác đang sử dụng camera. **Chụp ảnh** lưu ảnh kiểm tra tại đường dẫn đã chọn, không tạo hồ sơ.
+4. Mở **Video → Mở video** để phát, tạm dừng, tua về đầu, kéo thanh thời gian hoặc chọn tốc độ 0.25x, 0.5x, 1x, 1.5x hay 2x. Mỗi lần chỉ chạy một nguồn camera hoặc video. Âm thanh video không được phát. Định dạng ngoài MP4/AVI có thể cần codec phù hợp.
+5. Ghi lịch sử mặc định tắt cho camera và video. Chỉ bật khi có căn cứ và sự cho phép phù hợp. Khi tắt ghi lịch sử, nhận diện và hiển thị trực tiếp vẫn hoạt động.
+6. Trong **Lịch sử xuất hiện**, tìm theo tên/ID, chọn nguồn, lọc ngày camera hoặc khoảng giây video, rồi bấm **Áp dụng**. Bấm tiêu đề cột để sắp xếp; dùng Ctrl/Shift để chọn nhiều hàng. CSV xuất các hàng đang hiển thị theo bộ lọc đã áp dụng gần nhất.
+7. Cài đặt được lưu và áp dụng khi khởi động lại. Kiểm tra môi trường báo cáo backend đang chạy. Khởi động lại ứng dụng sau khi đổi backend.
 
 ## 4. CPU và NVIDIA CUDA
 
-Hai môi trường tách biệt giúp tránh cài đồng thời `onnxruntime` và
-`onnxruntime-gpu`. Cài bản GPU:
+CPU và CUDA dùng hai môi trường riêng để tránh cài đồng thời `onnxruntime` và `onnxruntime-gpu`. Cài và chạy bản CUDA:
 
 ```bat
 setup_windows.bat cuda
@@ -111,122 +82,77 @@ run_cuda.bat --diagnose
 run_cuda.bat
 ```
 
-Bản này cố định **onnxruntime-gpu 1.20.2**, dùng CUDA **12.x** và cuDNN **9.x** theo
-bảng tương thích chính thức. `setup_windows.bat cuda` cài CUDA runtime/cuDNN vào
-`.venv-cuda`; `run_cuda.bat` thêm các thư mục DLL vào PATH khi chạy. Cần NVIDIA
-driver tương thích. CUDA Toolkit dùng cho phát triển native; không cần cài toàn bộ
-Toolkit để chạy inference. Có card NVIDIA hoặc thấy tên provider chưa đủ chứng minh
-inference chạy được. Hướng dẫn chính thức:
+Bản CUDA dùng `onnxruntime-gpu 1.20.2`, CUDA 12.x và cuDNN 9.x theo [bảng tương thích chính thức](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements). `setup_windows.bat cuda` cài CUDA runtime và cuDNN vào `.venv-cuda`; `run_cuda.bat` bổ sung thư mục DLL vào PATH. Cần NVIDIA driver tương thích. CUDA Toolkit dành cho phát triển native; inference không yêu cầu cài toàn bộ Toolkit.
 
-- <https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements>
-- <https://onnxruntime.ai/docs/install/>
-- <https://developer.nvidia.com/cuda-toolkit-archive>
-- <https://developer.nvidia.com/cudnn-downloads>
+Engine kiểm tra provider khả dụng, tạo session, chạy thử detection và recognition, rồi kiểm tra provider của từng session. Nếu CUDA không khả dụng hoặc khởi tạo/inference thất bại, engine dựng lại trên CPU và hiển thị nguyên nhân. Chế độ CPU fallback vẫn cần các dependency CPU hoạt động. Trạng thái `CUDA + CPU fallback` cho biết CUDA là provider ưu tiên; ONNX Runtime có thể phân bổ một số toán tử sang CPU.
 
-Engine kiểm tra `get_available_providers()`, nạp session, chạy thử detection và
-recognition, rồi đọc `session.get_providers()` cho từng mạng. Nếu CUDA thiếu hoặc
-khởi tạo/inference thất bại, dựng lại engine CPU và hiển thị nguyên nhân. CPU
-fallback vẫn cần các dependency CPU hoạt động. Trạng thái `CUDA + CPU fallback`
-có nghĩa CUDA là provider ưu tiên của cả hai session; một số toán tử có thể được
-ORT phân bổ cho CPU. Không tuyên bố mọi toán tử đều chạy trên GPU.
+Tài liệu chính thức:
 
-Lỗi `LoadLibrary failed 126`, `cudnn64_9.dll`, `cublasLt64_12.dll`: kiểm tra PATH,
-CUDA runtime, cuDNN đúng major và driver. `no kernel image` trên GPU
-đời mới có thể cần ORT mới hơn; hãy dùng môi trường khác và kiểm thử lại toàn bộ
-trước khi thay phiên bản. Bản 1.20.2 không được bảo đảm hỗ trợ mọi GPU hiện tại.
-Không nâng GPU package tùy tiện mà giữ nguyên CUDA/cuDNN của bản cũ.
+- [CUDA Execution Provider: yêu cầu](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements)
+- [Cài đặt ONNX Runtime](https://onnxruntime.ai/docs/install/)
+- [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit-archive)
+- [cuDNN](https://developer.nvidia.com/cudnn-downloads)
 
-## 5. Quy tắc Check-in/Check-out và timeline
+Với lỗi `LoadLibrary failed 126`, thiếu `cudnn64_9.dll` hoặc `cublasLt64_12.dll`, kiểm tra PATH, CUDA runtime, phiên bản major của cuDNN và driver. GPU đời mới có thể cần ONNX Runtime mới hơn; thay đổi phiên bản cần được kiểm tra cùng CUDA/cuDNN tương ứng. Bản 1.20.2 không đảm bảo hỗ trợ mọi GPU hiện hành.
 
-- Chỉ một phiên đang mở cho mỗi người trong nguồn đang phân tích. Lần nhận diện
-  được xác nhận đầu tiên mở phiên; các lần sau cập nhật `last_seen` trong RAM.
-- Gallery được nạp từ embedding lưu sẵn, không trích xuất lại ảnh đăng ký mỗi frame.
-- Tracker liên kết IoU, yêu cầu hai kết quả cùng danh tính liên tiếp, đồng thời
-  kiểm tra ngưỡng cosine và khoảng cách điểm giữa hai người. Nếu điểm thấp, nhãn
-  trở về Không xác định; không giữ tên cũ qua một kết quả không đủ tin cậy.
-- Mất dấu ngắn giữ phiên mở. Vắng **quá** 30 giây mặc định đóng phiên; trở lại mở
-  phiên mới. Check-out là nhận diện cuối cùng, không cộng thêm thời gian chờ.
-- Camera dùng Unix timestamp của máy và monotonic clock cho timeout. Giờ hiển
-  thị/CSV có offset múi giờ của máy. Nếu đồng hồ bị chỉnh lùi, không để last_seen
-  nhỏ hơn first_seen; đồng bộ đồng hồ hệ điều hành trước khi vận hành.
-- Video dùng vị trí media tính bằng giây/ms, không dùng giờ phát trên máy. Hash
-  SHA-256 toàn bộ nội dung định danh video, vì vậy đổi tên/sao chép vẫn cùng nguồn.
-  Hash chạy nền nhưng có thể mất thời gian với video lớn. Metadata ngày quay
-  không được suy đoán hoặc tự áp dụng.
-- Seek/tắt ghi/đổi nguồn làm tăng epoch, loại khung hình và kết quả cũ, đóng đoạn
-  phiên hiện tại. Phân tích lại cùng video hợp nhất khoảng trùng/chồng lấn và các
-  khoảng cách nhau không quá thời gian vắng mặt, trong giao dịch SQLite. Hợp nhất
-  mở rộng bắc cầu để replay không sinh nhiều bản ghi trùng.
-- Tạm dừng không tạo tick thời gian vắng mặt. Tua tới một vị trí mới khi đang
-  dừng sẽ xử lý một frame tại vị trí đó. Kết quả không tự tạo giờ quay giả.
-- Backend OpenCV phải cung cấp FPS/số frame hợp lệ. Với video CFR, POS_MSEC được
-  ưu tiên và đối chiếu frame_index/FPS; khi backend trả timestamp sai, dùng
-  frame_index/FPS. Video VFR không được bảo đảm chính xác từng timestamp khi
-  backend thiếu PTS; hãy chuyển sang MP4 CFR trước khi yêu cầu timeline chính xác.
-- Kiến trúc lấy mẫu mới nhất, không bảo đảm nhận diện mọi frame. Tăng Hz hoặc giảm
-  tốc độ phát nếu cần phân tích đoạn ngắn; kiểm định trên dữ liệu thực tế.
-- Lưu ngay lúc mở/đóng phiên và checkpoint phần thay đổi khoảng 2 giây. Đóng bình
-  thường flush toàn bộ; mất điện/kill tiến trình có thể mất tối đa phần cập nhật
-  sau checkpoint gần nhất. Lần mở lại đóng các phiên bị gián đoạn ở last_seen đã lưu.
+## 5. Quy tắc phiên và timeline
 
-## 6. Dữ liệu, CSV và quyền riêng tư
+- Mỗi người chỉ có một phiên đang mở trong từng nguồn phân tích. Lần nhận diện được xác nhận đầu tiên mở phiên; các lần tiếp theo cập nhật `last_seen` trong RAM.
+- Gallery dùng embedding đã lưu, không trích xuất lại ảnh tham chiếu ở mỗi frame.
+- Tracker liên kết bằng IoU và yêu cầu hai kết quả liên tiếp có cùng danh tính. Việc gán nhãn cũng phải đạt ngưỡng cosine và khoảng cách điểm giữa hai danh tính. Kết quả không đủ tin cậy được hiển thị là **Không xác định**.
+- Mất dấu ngắn không đóng phiên. Mặc định, vắng quá 30 giây sẽ đóng phiên; lần xuất hiện sau mở phiên mới. Thời điểm checkout là lần nhận diện cuối cùng, không cộng thời gian chờ.
+- Camera dùng Unix timestamp và monotonic clock cho timeout. Giờ hiển thị/CSV có offset múi giờ máy. Nếu đồng hồ bị chỉnh lùi, `last_seen` không nhỏ hơn `first_seen`; đồng bộ đồng hồ hệ điều hành trước khi vận hành.
+- Video dùng vị trí media tính bằng giây/millisecond, không dùng giờ phát trên máy. SHA-256 của toàn bộ nội dung định danh video; đổi tên hoặc sao chép không đổi nguồn. Việc tính hash chạy nền và có thể mất thời gian với video lớn. Metadata ngày quay không được suy đoán hoặc tự áp dụng.
+- Seek, tắt ghi hoặc đổi nguồn làm tăng epoch, loại bỏ frame/kết quả cũ và đóng phiên hiện tại. Khi phân tích lại cùng video, các khoảng trùng/chồng lấn hoặc cách nhau không quá thời gian vắng mặt được hợp nhất trong giao dịch SQLite. Hợp nhất bắc cầu để tránh tạo nhiều bản ghi trùng khi replay.
+- Tạm dừng không tính thêm thời gian vắng mặt. Seek khi video đang dừng xử lý một frame tại vị trí đích.
+- Backend OpenCV cần cung cấp FPS và số frame hợp lệ. Với video CFR, ứng dụng ưu tiên POS_MSEC và đối chiếu frame_index/FPS; nếu timestamp từ backend không hợp lệ, dùng frame_index/FPS. Timestamp từng frame của video VFR không được đảm bảo khi backend thiếu PTS; chuyển video sang MP4 CFR khi cần timeline chính xác.
+- Pipeline lấy mẫu frame mới nhất nên không đảm bảo nhận diện mọi frame. Tăng Hz hoặc giảm tốc độ phát để phân tích đoạn ngắn; cần đánh giá trên dữ liệu vận hành.
+- Phiên được lưu khi mở/đóng và checkpoint phần thay đổi khoảng 2 giây. Đóng ứng dụng bình thường sẽ flush toàn bộ dữ liệu. Mất điện hoặc kết thúc tiến trình cưỡng bức có thể làm mất phần cập nhật kể từ checkpoint gần nhất. Khi khởi động lại, phiên bị gián đoạn được đóng tại `last_seen` đã lưu.
 
-Dữ liệu mặc định: `%USERPROFILE%\FaceTrackDesktop\`, gồm `settings.json`,
-`facetrack.sqlite3`, `images\<person-uuid>\<reference-uuid>.jpg` và `insightface`.
-Biến `FACETRACK_HOME` đặt vùng dữ liệu khác. Không commit thư mục dữ liệu thật.
-Thay đường dẫn trong cài đặt không tự di chuyển ảnh/DB hoặc cập nhật đường dẫn ảnh
-đã lưu; cần sao lưu và lập kế hoạch di chuyển khi ứng dụng đóng.
+## 6. Dữ liệu và quyền riêng tư
 
-Xóa lịch sử giữ nguyên người/embedding. Xóa hồ sơ xóa ảnh/embedding và giữ snapshot
-ID/tên trong lịch sử; khóa ngoại `person_ref` chuyển NULL. Tên trong lịch sử là tên
-tại thời điểm ghi nhận, không tự thay khi đổi tên hồ sơ. Ngừng hồ sơ giữ ảnh nhưng
-loại khỏi gallery so khớp. Xóa lịch sử/hồ sơ sẽ dừng nguồn để tránh worker đang chạy
-ghi lại bản ghi vừa xóa. Muốn ghi tiếp, chủ động bắt đầu lại nguồn.
+Thư mục dữ liệu mặc định là `%USERPROFILE%\FaceTrackDesktop\`, gồm:
 
-CSV có đúng bốn cột, UTF-8 BOM, một hàng mỗi phiên. Thời gian video ghi
-`Video [sha256:…] HH:MM:SS.mmm`; camera là ISO 8601 có offset. Tên bắt đầu bằng ký
-tự công thức Excel được thêm dấu nháy đơn để tránh thực thi công thức.
+- `settings.json`: cài đặt
+- `facetrack.sqlite3`: cơ sở dữ liệu
+- `images\<person-uuid>\<reference-uuid>.jpg`: ảnh tham chiếu
+- `insightface`: model
 
-Ảnh chưa đăng ký không được lưu thành hồ sơ. Không tải ảnh/embedding lên dịch vụ
-bên ngoài; ứng dụng không ghi embedding vào debug log. Chỉ vận hành khi có căn cứ
-và sự cho phép phù hợp cho việc thu thập. Dữ liệu SQLite/ảnh chưa mã hóa; dùng quyền
-truy cập Windows và mã hóa ổ đĩa nếu cần. Sao lưu cả DB và ảnh khi ứng dụng đã đóng;
-không chỉ sao chép tệp SQLite đang mở vì WAL có thể còn giao dịch.
+Biến `FACETRACK_HOME` đặt thư mục dữ liệu khác. Không commit dữ liệu người dùng vào mã nguồn. Thay đường dẫn trong Cài đặt không di chuyển ảnh/DB và không cập nhật đường dẫn ảnh đã lưu. Sao lưu và lập kế hoạch di chuyển khi ứng dụng đã đóng.
+
+Xóa lịch sử không xóa hồ sơ hoặc embedding. Xóa hồ sơ sẽ xóa ảnh/embedding, giữ snapshot ID/tên trong lịch sử và đặt khóa ngoại `person_ref` thành NULL. Tên trong lịch sử là tên tại thời điểm ghi nhận và không thay đổi khi sửa tên hồ sơ. Hồ sơ ngừng hoạt động vẫn giữ ảnh nhưng bị loại khỏi gallery so khớp. Khi xóa lịch sử hoặc hồ sơ, nguồn đang chạy sẽ dừng để tránh ghi lại dữ liệu đã xóa; cần bắt đầu lại nguồn để tiếp tục.
+
+CSV gồm bốn cột, mã hóa UTF-8 BOM và một hàng cho mỗi phiên. Thời gian video có định dạng `Video [sha256:…] HH:MM:SS.mmm`; thời gian camera dùng ISO 8601 kèm offset. Tên bắt đầu bằng ký tự công thức Excel được thêm dấu nháy đơn để tránh thực thi công thức.
+
+Ảnh chưa đăng ký không được lưu thành hồ sơ. Ứng dụng không tải ảnh/embedding lên dịch vụ bên ngoài và không ghi embedding vào debug log. Chỉ thu thập dữ liệu khi có căn cứ và sự cho phép phù hợp. SQLite và ảnh chưa được mã hóa; sử dụng quyền truy cập Windows và mã hóa ổ đĩa khi cần. Sao lưu cả DB lẫn ảnh khi ứng dụng đã đóng. Không chỉ sao chép tệp SQLite đang mở vì WAL có thể còn giao dịch.
 
 ## 7. Kiểm thử và đóng gói
+
+Chạy kiểm thử và chẩn đoán model:
 
 ```bat
 .venv-cpu\Scripts\python -m pytest -q
 .venv-cpu\Scripts\python main.py --backend cpu --diagnose
 ```
 
-Unit/integration tests dùng embedding tổng hợp, detector thay thế có kiểm soát,
-SQLite thật, video AVI tổng hợp qua OpenCV thật và GUI Qt offscreen; không cần
-camera vật lý hoặc tải trọng số. Chạy `--diagnose` để kiểm tra mô hình thật tại
-máy triển khai. Kế hoạch nghiệm thu: `docs/MANUAL_TESTS.md`.
+Unit/integration tests dùng embedding tổng hợp, detector thay thế có kiểm soát, SQLite thật, video AVI tổng hợp qua OpenCV và GUI Qt offscreen. Không cần camera vật lý hoặc tải trọng số để chạy bộ kiểm thử. Dùng `--diagnose` để kiểm tra model thật trên máy triển khai. Kịch bản nghiệm thu thủ công nằm tại `docs/MANUAL_TESTS.md`.
 
-Đóng gói thử CPU bằng PyInstaller trên **Windows**, trong môi trường đã cài đủ:
+Đóng gói CPU bằng PyInstaller trên Windows, trong môi trường đã cài đủ dependency:
 
 ```bat
 tools\build_exe.bat
 ```
 
-Phân phối toàn bộ `dist\FaceTrackDesktop\` của chế độ onedir. Trọng số vẫn được
-cài riêng ở user profile. Khởi chạy và thử trên Windows sạch, kiểm tra Qt platform
-plugins và ONNX DLL; PyInstaller không đóng gói CUDA/driver hệ thống. Script build
-chưa được chạy trên Windows trong môi trường tạo gói này. Không có EXE đã nghiệm
-thu trong ZIP. Với bản GPU, dùng môi trường GPU riêng và bổ sung kiểm thử DLL cùng
-giấy phép phân phối runtime.
+Phân phối toàn bộ thư mục `dist\FaceTrackDesktop\` ở chế độ onedir. Trọng số được cài riêng trong user profile. Kiểm tra ứng dụng trên Windows sạch, gồm Qt platform plugins và ONNX DLL. PyInstaller không đóng gói CUDA/driver hệ thống. Script build chưa được xác nhận trên Windows. Bản GPU cần môi trường riêng, kiểm tra DLL và rà soát giấy phép runtime.
 
-## 8. Cấu trúc và tài liệu
+## 8. Cấu trúc dự án
 
-- `main.py`: CLI, single-instance lock, khởi động GUI.
-- `app/config.py`, `app/models`: cấu hình, dữ liệu frame/face.
-- `app/ui`: năm trang và vẽ nhãn Unicode bằng QPainter.
-- `app/workers/pipeline.py`: capture thread, recognition thread, mailbox dung
-  lượng một frame, epoch gate. Không dùng hàng đợi frame vô hạn.
-- `app/services`: engine, matcher, tracker, enrollment, sessions, SQLite actor,
-  CSV, camera và video timestamp.
-- `tests`: kiểm thử độc lập thiết bị; `tools`: cài mô hình và build EXE.
-- `docs/ARCHITECTURE.md`: kiến trúc và đánh đổi; `docs/API_VERIFICATION.md`: API
-  thực tế đã đối chiếu; `docs/TEST_REPORT.md`: kết quả kiểm thử.
+- `main.py`: CLI, single-instance lock và khởi động GUI.
+- `app/config.py`, `app/models`: cấu hình và dữ liệu frame/face.
+- `app/ui`: năm trang giao diện và vẽ nhãn Unicode bằng QPainter.
+- `app/workers/pipeline.py`: capture thread, recognition thread, mailbox một frame và epoch gate; không dùng hàng đợi frame vô hạn.
+- `app/services`: engine, matcher, tracker, enrollment, session, SQLite actor, CSV, camera và video timestamp.
+- `tests`: kiểm thử độc lập thiết bị.
+- `tools`: cài model và build EXE.
+
+
