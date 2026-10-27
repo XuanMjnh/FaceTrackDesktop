@@ -59,7 +59,7 @@ class CameraPage(QWidget):
         screen_layout.addWidget(self.status)
         view = QHBoxLayout()
         view.addWidget(screen, 1)
-        self.presence = PresencePanel()
+        self.presence = PresencePanel(window.settings)
         view.addWidget(self.presence)
         layout.addLayout(view, 1)
 

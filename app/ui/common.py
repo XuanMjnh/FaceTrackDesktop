@@ -144,7 +144,10 @@ class VideoCanvas(QWidget):
                     parts.append("ID: " + match.person_id)
             else:
                 parts.append("Không xác định")
-            if self.settings.show_score:
+            if label.tracked:
+                if self.settings.show_tracking_status:
+                    parts.append("Đang theo dõi")
+            elif self.settings.show_score:
                 parts.append(f"Độ tương đồng: {match.score:.3f}")
             if not parts:
                 continue

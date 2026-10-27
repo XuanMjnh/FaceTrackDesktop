@@ -390,9 +390,29 @@ khởi động lại để áp dụng.
 - **Ngưỡng so khớp**: mặc định `0.45`. Nếu điểm thấp hơn ngưỡng, hoặc
   khoảng cách giữa hai danh tính đứng đầu nhỏ hơn `0.04`, nhãn là
   **Không xác định**.
-- **Tracker**: ghép detection giữa frame bằng IoU; nhãn danh tính cần
-  hai kết quả liên tiếp cùng người. Khi điểm không đủ tin cậy, tracker
-  không giữ lại tên cũ chỉ vì detection trước đó đã được nhận diện.
+- **Tracker**: danh tính mới cần hai kết quả nhận diện liên tiếp cùng người.
+  Sau khi xác nhận, nếu mặt bị tay che hoặc điểm so khớp giảm, tracker giữ
+  tên trên detection có vị trí liên tục, không nhập nhằng. Khi không còn
+  phát hiện mặt, optical flow theo dõi các điểm ở vùng đầu/vai để tiếp tục
+  hiển thị người và cập nhật lịch sử. Nhãn **Đang theo dõi** thay cho điểm
+  tương đồng khi danh tính được giữ bằng tracking.
+- **Chuyển động nhanh / lắc đầu**: neo điểm theo dõi dưới cằm để đầu có thể
+  chuyển động độc lập với vai. Khi optical flow mất dấu do dịch chuyển lớn,
+  tracker tìm lại mẫu ảnh vùng vai đã lưu, kiểm tra độ khớp và từ chối khi có
+  nhiều vị trí tương tự. Khi mặt được nhận diện lại chắc chắn, danh tính đã
+  xác nhận được ghép lại ngay cả khi khung mặt mới không chồng lên khung cũ.
+- **Theo dõi khi mất nhận diện mặt**: không giới hạn thời gian giữ danh tính.
+  Theo dõi tiếp tục khi mặt bị che, ra ngoài khung hình hoặc không so khớp được,
+  miễn là vẫn bám được người đó. Theo dõi kết thúc khi người rời khung hình,
+  mất dấu chuyển động, gặp danh tính khác
+  hoặc ghép vị trí nhập nhằng. Tua, đổi nguồn và đổi chế độ ghi xóa tracking cũ.
+  Cần vùng vai/thân trên còn thấy
+  rõ và có đủ chi tiết ảnh khi mặt bị che hoàn toàn. Chuyển động nhanh, người
+  chồng lấp hoặc vùng vai ít chi tiết có thể làm mất dấu.
+- **Hiển thị trạng thái theo dõi**: bật/tắt **Hiển thị dòng "Đang theo dõi"**
+  trong **Cài đặt → Thông tin trên khung hình**, rồi lưu để áp dụng ngay cho
+  camera, video và danh sách người trong khung hình. Tùy chọn này chỉ đổi dòng
+  chữ hiển thị; việc theo dõi và ghi lịch sử vẫn tiếp tục khi ẩn dòng chữ.
 - **Phiên camera**: thời gian hiển thị dùng Unix timestamp theo múi giờ
   máy; timeout vắng mặt dùng monotonic clock để tránh bị ảnh hưởng khi
   đồng hồ hệ thống thay đổi. Mặc định vắng quá `30` giây sẽ đóng phiên;

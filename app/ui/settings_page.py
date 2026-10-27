@@ -53,6 +53,8 @@ class SettingsPage(QWidget):
         self.absence.setSuffix(" giây")
         self.absence.setValue(s.absence_seconds)
         recognition_body.addWidget(field("Thời gian vắng mặt để đóng phiên", self.absence))
+        recognition_body.addWidget(label("Tiếp tục theo dõi người đã nhận diện khi mặt bị che. "
+                                        "Dừng khi người rời khung hình hoặc mất dấu.", "Muted", True))
         self.hz = QDoubleSpinBox()
         self.hz.setRange(0.2, 60)
         self.hz.setSuffix(" Hz")
@@ -81,10 +83,12 @@ class SettingsPage(QWidget):
         display, display_body = panel("Thông tin trên khung hình")
         checks = FlowLayout(spacing=24)
         self.name, self.id, self.score = QCheckBox("Họ tên"), QCheckBox("Mã ID"), QCheckBox("Điểm tương đồng")
+        self.tracking_status = QCheckBox('Hiển thị dòng "Đang theo dõi"')
         self.name.setChecked(s.show_name)
         self.id.setChecked(s.show_id)
         self.score.setChecked(s.show_score)
-        for control in (self.name, self.id, self.score):
+        self.tracking_status.setChecked(s.show_tracking_status)
+        for control in (self.name, self.id, self.score, self.tracking_status):
             checks.addWidget(control)
         display_body.addLayout(checks)
         body.addWidget(display)
@@ -121,10 +125,16 @@ class SettingsPage(QWidget):
                           absence_seconds=self.absence.value(), recognition_hz=self.hz.value(),
                           database_path=self.database.text().strip(), image_dir=self.images.text().strip(),
                           model_root=self.models.text().strip(), show_name=self.name.isChecked(),
-                          show_id=self.id.isChecked(), show_score=self.score.isChecked())
+                          show_id=self.id.isChecked(), show_score=self.score.isChecked(),
+                          show_tracking_status=self.tracking_status.isChecked())
             if not all((new.database_path, new.image_dir, new.model_root)):
                 raise ValueError("Các đường dẫn không được để trống")
             new.save()
-            QMessageBox.information(self, "Đã lưu", "Khởi động lại để áp dụng. Dữ liệu không tự di chuyển khi đổi đường dẫn.")
+            self.window.settings.show_tracking_status = new.show_tracking_status
+            for page in (self.window.camera_page, self.window.video_page):
+                page.canvas.update()
+                page.presence.update_people(page.canvas.labels)
+            QMessageBox.information(self, "Đã lưu", 'Tùy chọn hiển thị "Đang theo dõi" đã áp dụng. '
+                                    "Khởi động lại để áp dụng các cài đặt khác. Dữ liệu không tự di chuyển khi đổi đường dẫn.")
         except Exception as exc:
             QMessageBox.warning(self, "Cài đặt", str(exc))

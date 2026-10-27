@@ -5,8 +5,9 @@ from app.ui.theme import panel, label
 
 class PresencePanel(QWidget):
     """People on the latest valid inference frame, never the history/gallery."""
-    def __init__(self):
+    def __init__(self, settings=None):
         super().__init__()
+        self.settings = settings
         self.setMinimumWidth(210)
         self.setMaximumWidth(290)
         layout = QVBoxLayout(self)
@@ -31,13 +32,19 @@ class PresencePanel(QWidget):
     def update_people(self, labels):
         known = {face.match.person_id: face.match.name for face in labels if face.match.person_id}
         unknown = sum(not face.match.person_id for face in labels)
-        signature = (tuple(sorted(known.items())), unknown)
+        tracked = {face.match.person_id for face in labels if face.match.person_id and face.tracked}
+        tracked -= {face.match.person_id for face in labels if face.match.person_id and not face.tracked}
+        if self.settings is not None and not self.settings.show_tracking_status:
+            tracked.clear()
+        signature = (tuple(sorted(known.items())), unknown, tuple(sorted(tracked)))
         if signature == self.signature:
             return
         self.signature = signature
         self.people.clear()
         for person_id, name in signature[0]:
             item = QListWidgetItem(f"{name}\nID: {person_id}")
+            if person_id in tracked:
+                item.setText(item.text() + "\nĐang theo dõi")
             item.setToolTip(item.text())
             self.people.addItem(item)
         if unknown:

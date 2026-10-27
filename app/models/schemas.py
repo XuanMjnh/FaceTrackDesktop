@@ -32,3 +32,4 @@ class Frame:
 class FaceLabel:
     bbox: tuple
     match: Match
+    tracked: bool = False  # Identity retained by tracking, not a fresh face match.
