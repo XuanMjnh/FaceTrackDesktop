@@ -81,6 +81,8 @@ chủ SMTP do người dùng cấu hình. Ảnh camera/video và embedding khôn
       InsightFace.
     - Chọn thông tin hiển thị trên khung hình và chạy chẩn đoán
       backend/model.
+    Trong **Thông tin trên khung hình**, tùy chọn **Đang theo dõi** bật/tắt
+    dòng trạng thái tracking; mặc định bật, lưu và khởi động lại để áp dụng.
     - Thay đổi cài đặt được lưu và có hiệu lực sau khi khởi động lại ứng
       dụng. Đổi đường dẫn không tự di chuyển dữ liệu hiện có.
 
@@ -134,7 +136,10 @@ flowchart TB
 - **`app/services/face_matcher.py`**: chuẩn hóa embedding 512 chiều, so
   khớp cosine với gallery và xử lý trường hợp không đủ tin cậy/mơ hồ.
 - **`app/services/tracker.py`**: liên kết bounding box giữa các frame
-  bằng IoU và yêu cầu xác nhận danh tính qua các kết quả liên tiếp.
+  bằng IoU, xác nhận danh tính qua các kết quả liên tiếp và giữ danh tính
+  đã xác nhận khi mặt bị che nhưng vẫn theo dõi được chuyển động.
+- **`app/services/visual_motion.py`**: theo dõi điểm ảnh bằng sparse optical
+  flow trên vùng mặt/thân trên; xử lý trên ảnh thu nhỏ, không thêm mô hình AI.
 - **`app/services/enrollment.py`**: đọc ảnh, kiểm tra số khuôn mặt/chất
   lượng tối thiểu, cảnh báo ảnh tương đồng và lưu ảnh tham chiếu cùng
   embedding.
@@ -390,9 +395,22 @@ khởi động lại để áp dụng.
 - **Ngưỡng so khớp**: mặc định `0.45`. Nếu điểm thấp hơn ngưỡng, hoặc
   khoảng cách giữa hai danh tính đứng đầu nhỏ hơn `0.04`, nhãn là
   **Không xác định**.
-- **Tracker**: ghép detection giữa frame bằng IoU; nhãn danh tính cần
-  hai kết quả liên tiếp cùng người. Khi điểm không đủ tin cậy, tracker
-  không giữ lại tên cũ chỉ vì detection trước đó đã được nhận diện.
+- **Tracker**: danh tính mới cần hai kết quả liên tiếp cùng người trong
+  gallery đang hoạt động. Sau khi xác nhận, tracker giữ tên/ID khi điểm
+  nhận diện giảm hoặc detector không còn thấy mặt, nếu các điểm ảnh ở mặt
+  hoặc thân trên vẫn theo dõi được. Nhãn **Đang theo dõi** phân biệt trạng
+  thái này với một lần nhận diện khuôn mặt mới; không hiển thị lại điểm
+  tương đồng cũ. Danh tính được giữ không giới hạn thời gian chừng nào
+  vẫn tracking liên tục được. Mất điểm ảnh, gián đoạn xử lý trên `2` giây, hoặc ghép
+  nối mơ hồ khi nhiều người giao nhau sẽ kết thúc việc giữ danh tính.
+  Người che cả mặt lẫn thân hoặc rời khung hình cần được nhận diện lại.
+  Theo dõi thành công vẫn cập nhật danh sách trong khung hình và phiên
+  xuất hiện. Tua/đổi nguồn/tải lại gallery xóa toàn bộ trạng thái tracking.
+- **Chi phí tracking**: chỉ chạy cùng nhịp `recognition_hz`, ảnh tracking có
+  cạnh dài tối đa `480 px`, tối đa `48` điểm/người; các track dùng chung
+  hai lượt optical flow thuận/ngược. Bỏ qua optical flow khi đã so khớp
+  được mặt rõ gần vị trí cũ. Không thêm lượt inference InsightFace và
+  không giữ khóa capture/giao diện trong lúc tính tracking.
 - **Phiên camera**: thời gian hiển thị dùng Unix timestamp theo múi giờ
   máy; timeout vắng mặt dùng monotonic clock để tránh bị ảnh hưởng khi
   đồng hồ hệ thống thay đổi. Mặc định vắng quá `30` giây sẽ đóng phiên;
@@ -494,6 +512,7 @@ FaceTrackDesktop/
 │   │   ├── notifications.py
 │   │   ├── session_manager.py
 │   │   ├── tracker.py
+│   │   ├── visual_motion.py
 │   │   └── video_service.py
 │   ├── ui/
 │   │   ├── camera_page.py

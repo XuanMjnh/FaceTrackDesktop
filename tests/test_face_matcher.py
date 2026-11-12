@@ -26,14 +26,16 @@ def test_invalid_embedding_rejected(bad):
         normalize(bad)
 
 
-def test_tracker_requires_confirmation_and_drops_low_confidence(vector):
+def test_tracker_requires_confirmation_and_retains_confirmed_identity(vector):
     matcher = FaceMatcher([{"person_id":"a", "name":"A", "embedding":vector}])
     tracker = Tracker()
     known = Detection((0,0,100,100), vector)
     assert tracker.update([known], matcher, 0)[0].match.person_id is None
     assert tracker.update([known], matcher, .1)[0].match.person_id == "a"
     unknown = Detection((0,0,100,100), np.roll(vector, 1))
-    assert tracker.update([unknown], matcher, .2)[0].match.person_id is None
+    label = tracker.update([unknown], matcher, .2)[0]
+    assert label.match.person_id == "a"
+    assert label.tracked
 
 
 def test_inactive_profiles_not_in_gallery(db, person, vector):

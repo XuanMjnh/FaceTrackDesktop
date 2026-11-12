@@ -22,6 +22,7 @@ class Settings:
     show_name: bool = True
     show_id: bool = True
     show_score: bool = False
+    show_tracking: bool = True
 
     def validate(self):
         if self.backend not in ("auto", "cpu", "cuda"):

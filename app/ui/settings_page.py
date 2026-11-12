@@ -81,10 +81,12 @@ class SettingsPage(QWidget):
         display, display_body = panel("Thông tin trên khung hình")
         checks = FlowLayout(spacing=24)
         self.name, self.id, self.score = QCheckBox("Họ tên"), QCheckBox("Mã ID"), QCheckBox("Điểm tương đồng")
+        self.tracking = QCheckBox("Đang theo dõi")
         self.name.setChecked(s.show_name)
         self.id.setChecked(s.show_id)
         self.score.setChecked(s.show_score)
-        for control in (self.name, self.id, self.score):
+        self.tracking.setChecked(s.show_tracking)
+        for control in (self.name, self.id, self.score, self.tracking):
             checks.addWidget(control)
         display_body.addLayout(checks)
         body.addWidget(display)
@@ -121,7 +123,8 @@ class SettingsPage(QWidget):
                           absence_seconds=self.absence.value(), recognition_hz=self.hz.value(),
                           database_path=self.database.text().strip(), image_dir=self.images.text().strip(),
                           model_root=self.models.text().strip(), show_name=self.name.isChecked(),
-                          show_id=self.id.isChecked(), show_score=self.score.isChecked())
+                          show_id=self.id.isChecked(), show_score=self.score.isChecked(),
+                          show_tracking=self.tracking.isChecked())
             if not all((new.database_path, new.image_dir, new.model_root)):
                 raise ValueError("Các đường dẫn không được để trống")
             new.save()
