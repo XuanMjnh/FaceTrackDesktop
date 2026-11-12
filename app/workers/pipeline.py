@@ -215,7 +215,11 @@ class Pipeline:
                 with self.gate:
                     if frame.epoch != self.epoch:
                         continue
-                    labels = tracker.update(detections, self.matcher, frame.clock)
+                    matcher = self.matcher
+                labels = tracker.update(detections, matcher, frame.clock, frame.image)
+                with self.gate:
+                    if frame.epoch != self.epoch:
+                        continue
                     if frame.logging:
                         if self.session is None:
                             self.session = SessionManager(self.db, frame.source_type, frame.source_id, self.settings.absence_seconds)

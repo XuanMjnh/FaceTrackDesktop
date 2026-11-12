@@ -116,3 +116,66 @@ def test_eof_flushes_last_successful_observation(pipeline, clip, db):
     eventually(lambda: pipeline.snapshot()["position"] > 3.8)
     eventually(lambda: bool(db.history()) and db.history()[0]["status"] == "closed")
     assert db.history()[0]["last_seen"] > 3
+
+
+@pytest.mark.parametrize("invalidate", ["seek", "gallery"])
+def test_occluded_person_updates_presence_and_session_until_invalidation(db, person, vector, invalidate):
+    class CoverEngine(FakeEngine):
+        covered = False
+
+        def detect(self, image):
+            return [] if self.covered else [Detection((100, 40, 180, 120), self.vector)]
+
+    db.add_reference(person, "ref.jpg", vector)
+    engine = CoverEngine(vector)
+    p = Pipeline(db, engine, Settings())
+    image = np.zeros((300, 400, 3), np.uint8)
+    image[40:240, 100:180] = np.random.default_rng(42).integers(40, 240, (200, 80, 3), dtype=np.uint8)
+
+    def recognize(clock):
+        p.inbox.put(Frame(p.epoch, image.copy(), "video", "clip", clock, clock, 10, True))
+        eventually(lambda: p.results.peek() is not None and p.results.peek()[0].timestamp == clock)
+        return p.results.peek()[1]
+
+    try:
+        recognize(0)
+        assert recognize(.2)[0].match.person_id == person
+        engine.covered = True
+        image[40:120, 100:180] = 80
+        labels = recognize(.4)
+        assert labels[0].tracked and labels[0].match.person_id == person
+        if invalidate == "seek":
+            p.command("seek", .6)
+        else:
+            p.reload_gallery()
+        assert db.history()[0]["last_seen"] == .4
+        assert recognize(.6) == []
+    finally:
+        assert p.shutdown()
+
+
+def test_inflight_tracking_releases_gate_and_cannot_publish_old_frame(db, person, vector, monkeypatch):
+    from app.services.tracker import Tracker
+    entered, release = threading.Event(), threading.Event()
+    original = Tracker.update
+
+    def slow_tracking(self, *args, **kwargs):
+        entered.set()
+        assert release.wait(3)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Tracker, "update", slow_tracking)
+    db.add_reference(person, "ref.jpg", vector)
+    p = Pipeline(db, FakeEngine(vector), Settings())
+    try:
+        image = np.zeros((64, 64, 3), np.uint8)
+        p.inbox.put(Frame(p.epoch, image, "video", "clip", 1, 1, 10, True))
+        assert entered.wait(2)
+        p.command("seek", 2)
+        release.set()
+        time.sleep(.15)
+        assert p.results.peek() is None
+        assert not db.history()
+    finally:
+        release.set()
+        assert p.shutdown()
